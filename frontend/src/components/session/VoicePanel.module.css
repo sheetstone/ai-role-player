@@ -1,0 +1,217 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  width: 100%;
+  max-width: 400px;
+  box-shadow: var(--shadow-md);
+}
+
+/* ── Mode toggle ────────────────────────────────────────────────────────────── */
+.modeToggle {
+  display: flex;
+  gap: 3px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  padding: 3px;
+  align-self: flex-end;
+}
+
+.modeBtn {
+  padding: 0.25rem 0.875rem;
+  border: none;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--text-4);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.modeBtn:hover:not(.modeBtnActive) {
+  color: var(--text-3);
+}
+
+.modeBtnActive {
+  background: var(--surface);
+  color: var(--text-1);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Waveform ────────────────────────────────────────────────────────────────── */
+.waveform {
+  width: 100%;
+  max-width: 280px;
+  display: block;
+  border-radius: var(--radius-sm);
+}
+
+/* ── Timer ───────────────────────────────────────────────────────────────────── */
+.timer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--red);
+  height: 1.5rem;
+}
+
+.timerDot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+  background: var(--red);
+  animation: blink 1s ease-in-out infinite;
+}
+
+.timerTime {
+  letter-spacing: 0.04em;
+}
+
+.timerMax {
+  color: var(--text-4);
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+/* ── Mic button ──────────────────────────────────────────────────────────────── */
+.btnRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.micBtn {
+  width: 80px;
+  height: 80px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color var(--transition-base), background var(--transition-base), color var(--transition-base), box-shadow var(--transition-base);
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+.micBtn:hover:not(:disabled):not(.micBtnRecording) {
+  border-color: var(--orange);
+  color: var(--orange);
+  box-shadow: var(--shadow-md);
+}
+
+.micBtn:active:not(:disabled):not(.micBtnRecording) {
+  transform: scale(0.96);
+}
+
+.micBtnRecording {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+  animation: recordPulse 1.5s ease-in-out infinite;
+}
+
+.micBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+@keyframes recordPulse {
+  0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.35); }
+  70% { box-shadow: 0 0 0 18px rgba(220, 38, 38, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+}
+
+/* ── Hint text ───────────────────────────────────────────────────────────────── */
+.hint {
+  font-size: var(--text-xs);
+  color: var(--text-4);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0;
+}
+
+/* ── Cancel button ───────────────────────────────────────────────────────────── */
+.cancelBtn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0.35rem 0.875rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  color: var(--text-3);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.cancelBtn:hover {
+  border-color: var(--red-border);
+  color: var(--red);
+  background: var(--red-subtle);
+}
+
+.cancelKbd {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.05rem 0.3rem;
+  color: var(--text-4);
+}
+
+.cancelBtn:hover .cancelKbd {
+  background: var(--red-subtle);
+  border-color: var(--red-border);
+  color: var(--red);
+}
+
+/* ── Toast ───────────────────────────────────────────────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: var(--space-8);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text-1);
+  color: var(--surface);
+  padding: 0.5rem 1.125rem;
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  z-index: 200;
+  pointer-events: none;
+  white-space: nowrap;
+  animation: toastIn var(--transition-base) ease;
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}

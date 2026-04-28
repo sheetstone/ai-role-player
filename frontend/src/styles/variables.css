@@ -1,0 +1,105 @@
+:root {
+  /* ── Backgrounds ───────────────────────────────────────────── */
+  --bg:           #FFF5E6;   /* warm cream page base */
+  --surface:      #FFFFFF;   /* cards, panels */
+  --surface-2:    #FFF8F3;   /* inputs, nested surfaces */
+  --surface-3:    #FFF0E4;   /* hover states */
+
+  /* ── Borders ───────────────────────────────────────────────── */
+  --border:       #E8D5C0;
+  --border-subtle: #F2E8DC;
+
+  /* ── Text ──────────────────────────────────────────────────── */
+  --text-1:  #111827;   /* headings, primary labels */
+  --text-2:  #374151;   /* body, descriptions */
+  --text-3:  #6B7280;   /* secondary notes */
+  --text-4:  #9CA3AF;   /* placeholders, disabled */
+
+  /* ── Brand — muted blue (voice / AI state / interactive) ───── */
+  --brand:        #80A1C1;
+  --brand-hover:  #6A8DAD;
+  --brand-dim:    #557A9A;
+  --brand-subtle: #EEF4FA;
+  --brand-border: #B0CAE0;
+
+  /* ── Cyan — AI speaking state ───────────────────────────────── */
+  --cyan:         #80A1C1;
+  --cyan-hover:   #6A8DAD;
+  --cyan-subtle:  #EEF4FA;
+  --cyan-border:  #B0CAE0;
+
+  /* ── Amber — processing / thinking ─────────────────────────── */
+  --amber:        #D97706;
+  --amber-subtle: #FFFBEB;
+  --amber-border: #FDE68A;
+
+  /* ── Red — recording / error ────────────────────────────────── */
+  --red:          #DC2626;
+  --red-hover:    #B91C1C;
+  --red-subtle:   #FEF2F2;
+  --red-border:   #FECACA;
+
+  /* ── Green — success / good moments ────────────────────────── */
+  --green:        #16A34A;
+  --green-subtle: #F0FDF4;
+  --green-border: #BBF7D0;
+
+  /* ── Orange — primary CTA / accent (warm coral) ─────────────── */
+  --orange:        #C4784A;
+  --orange-hover:  #B06840;
+  --orange-dim:    #9A5A34;
+  --orange-subtle: #FFF0E8;
+  --orange-border: #F5C8B0;
+
+  /* ── Typography ─────────────────────────────────────────────── */
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace;
+
+  --text-xs:   0.75rem;   /* 12px */
+  --text-sm:   0.875rem;  /* 14px */
+  --text-base: 1rem;      /* 16px */
+  --text-md:   1rem;      /* 16px */
+  --text-lg:   1.125rem;  /* 18px */
+  --text-xl:   1.25rem;   /* 20px */
+  --text-2xl:  1.5rem;    /* 24px */
+  --text-3xl:  2rem;      /* 32px */
+  --text-4xl:  2.5rem;    /* 40px */
+
+  --weight-normal:    400;
+  --weight-medium:    500;
+  --weight-semibold:  600;
+  --weight-bold:      700;
+  --weight-extrabold: 800;
+  --weight-black:     900;
+
+  /* ── Spacing — 4/8/12/16/24/32 ─────────────────────────────── */
+  --space-1:  0.25rem;   /* 4px */
+  --space-2:  0.5rem;    /* 8px */
+  --space-3:  0.75rem;   /* 12px */
+  --space-4:  1rem;      /* 16px */
+  --space-5:  1.25rem;   /* 20px */
+  --space-6:  1.5rem;    /* 24px */
+  --space-8:  2rem;      /* 32px */
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  /* ── Radii — sm:4px md:8px ──────────────────────────────────── */
+  --radius-sm:   4px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
+  --radius-2xl:  20px;
+  --radius-full: 9999px;
+
+  /* ── Shadows (light mode) ────────────────────────────────────── */
+  --shadow-sm:  0 1px 3px rgba(17, 24, 39, 0.08);
+  --shadow-md:  0 4px 16px rgba(17, 24, 39, 0.10);
+  --shadow-lg:  0 8px 32px rgba(17, 24, 39, 0.12);
+  --shadow-xl:  0 16px 48px rgba(17, 24, 39, 0.15);
+
+  /* ── Transitions ─────────────────────────────────────────────── */
+  --transition-fast:   100ms ease;
+  --transition-base:   180ms ease;
+  --transition-slow:   300ms ease;
+}

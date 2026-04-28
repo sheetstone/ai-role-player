@@ -1,0 +1,155 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-12) var(--space-4) var(--space-8);
+  gap: var(--space-8);
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+.header {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.eyebrow {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--orange);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.eyebrow::before,
+.eyebrow::after {
+  content: '';
+  display: block;
+  width: 24px;
+  height: 1px;
+  background: var(--orange-border);
+}
+
+.title {
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-extrabold);
+  color: var(--text-1);
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+}
+
+.subtitle {
+  font-size: var(--text-base);
+  color: var(--text-3);
+  max-width: 340px;
+  line-height: 1.6;
+  margin-top: var(--space-1);
+}
+
+.adminLink {
+  margin-top: var(--space-1);
+}
+
+.adminLink a {
+  font-size: var(--text-xs);
+  color: var(--text-4);
+  font-weight: var(--weight-medium);
+  letter-spacing: 0.02em;
+  transition: color var(--transition-fast);
+}
+
+.adminLink a:hover { color: var(--text-2); }
+
+/* ── Error banner ───────────────────────────────────────────────────────── */
+.errorBanner {
+  background: var(--red-subtle);
+  border: 1px solid var(--red-border);
+  border-radius: var(--radius-md);
+  padding: 0.75rem var(--space-4);
+  color: var(--red);
+  font-size: var(--text-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 540px;
+}
+
+.errorBanner button {
+  background: none;
+  border: 1px solid var(--red-border);
+  color: var(--red);
+  border-radius: var(--radius-sm);
+  padding: 0.2rem 0.6rem;
+  font-size: var(--text-xs);
+  cursor: pointer;
+  margin-left: auto;
+  font-family: var(--font-sans);
+  transition: background var(--transition-fast);
+}
+
+.errorBanner button:hover { background: var(--red-border); }
+
+/* ── Card ───────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  width: 100%;
+  max-width: 540px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  box-shadow: var(--shadow-md);
+}
+
+.selectors {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+/* ── Divider ────────────────────────────────────────────────────────────── */
+.divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: calc(var(--space-2) * -1) 0;
+}
+
+/* ── Start button ───────────────────────────────────────────────────────── */
+.startBtn {
+  width: 100%;
+  padding: 0.875rem;
+  background: var(--orange);
+  border: none;
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  transition: background var(--transition-fast), opacity var(--transition-fast), transform var(--transition-fast);
+  box-shadow: 0 2px 12px rgba(196, 120, 74, 0.30);
+}
+
+.startBtn:hover:not(:disabled) {
+  background: var(--orange-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(196, 120, 74, 0.40);
+}
+
+.startBtn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.startBtn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}

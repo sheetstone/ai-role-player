@@ -1,0 +1,86 @@
+/* ── Pill container ─────────────────────────────────────────────────────────── */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0.35rem 0.875rem;
+  border-radius: var(--radius-full);
+  border: 1px solid transparent;
+  transition: background var(--transition-base), border-color var(--transition-base), color var(--transition-base);
+}
+
+.label {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ── State colour themes ────────────────────────────────────────────────────── */
+.idle       { background: var(--surface-2);    border-color: var(--border);        color: var(--text-4);  }
+.listening  { background: var(--red-subtle);   border-color: var(--red-border);    color: var(--red);     }
+.processing { background: var(--amber-subtle); border-color: var(--amber-border);  color: var(--amber);   }
+.speaking   { background: var(--brand-subtle); border-color: var(--brand-border);  color: var(--brand);   }
+.paused     { background: var(--orange-subtle);border-color: var(--orange-border); color: var(--orange);  }
+.ended      { background: var(--green-subtle); border-color: var(--green-border);  color: var(--green);   }
+
+/* ── Dot — shared base ──────────────────────────────────────────────────────── */
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+  /* colour set per-state via modifier classes below */
+}
+
+.dotIdle       { background: var(--text-4); }
+.dotListening  { background: var(--red);    animation: pulseDot 1.2s ease-in-out infinite; }
+.dotPaused     { background: var(--orange); }
+.dotEnded      { background: var(--green);  }
+
+@keyframes pulseDot {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.5); }
+  55%      { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); }
+}
+
+/* ── Spinner (processing) ───────────────────────────────────────────────────── */
+.spinner {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--amber-border);
+  border-top-color: var(--amber);
+  flex-shrink: 0;
+  animation: spin 600ms linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Wave bars (speaking) ───────────────────────────────────────────────────── */
+.waveBars {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.waveBar {
+  width: 3px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--brand);
+  transform-origin: bottom;
+  animation: wave 700ms ease-in-out infinite;
+}
+
+.waveBar:nth-child(2) { animation-delay: 116ms; }
+.waveBar:nth-child(3) { animation-delay: 233ms; }
+
+@keyframes wave {
+  0%, 100% { transform: scaleY(0.25); }
+  50%      { transform: scaleY(1); }
+}

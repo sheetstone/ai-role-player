@@ -1,0 +1,155 @@
+CASE STUDY
+AI ROLE PLAYER – VOICE-BASED CUSTOMER SALES SKILLS
+
+Overview
+
+This case study aims to evaluate your ability to build a high-quality, scalable front-end experience, tailored for an AI-enabled sales training product. Read the below problem statement, instructions, acceptance criteria, and deliverables carefully.
+ 
+Your solution will be primarily evaluated on the UI’s ability to address the outlined business pain points (training effectiveness, configurability, and low-latency voice interaction). Secondary evaluation criteria will focus on the technical implementation, including performance, robustness, frontend architecture, but also creativity and overall approach.
+
+Overall, the tool should be presented as a fully functional working demo, either hosted locally or deployed on the cloud. You are also expected to document your approach and describe your solution approach, tech stack, and outline of your core features. 
+
+Business Problem
+
+Sales teams often struggle to practice realistic customer conversations in a consistent and measurable way. Traditional role plays depend on availability of coaches or peers, vary in quality, and are difficult to scale across regions, products, and skill levels.
+
+To address this, the business is seeking to develop a web application: an AI Role Player that enables users to practice their customer sales skills through voice-first interactive simulations.
+
+The role player should:
+•	Provide realistic customer conversations based on selected scenarios (e.g., price objections, competitor comparisons, renewal conversations, upsell opportunities).
+•	Simulate different customer personas (e.g., skeptical, rushed, detail-oriented, friendly but indecisive).
+•	Support voice input and voice output end-to-end: 
+o	The user speaks to the role player (microphone input).
+o	The AI persona responds back in speech (audio playback).
+•	Deliver fast, natural interaction with minimal perceived latency, to maintain conversational flow.
+•	Provide feedback after each session, helping users improve.
+
+In addition, admin users must be able to configure and manage the role player by creating and editing custom scenarios and personas, and optionally defining conversation goals and scoring rubrics.
+
+
+Acceptance Criteria
+
+User Interface
+
+1.	Learner Dashboard (Role Play Start)
+1.1.	The web application must provide a clean, intuitive dashboard where users can: 
+•	Select a scenario from a searchable drop-down menu
+•	Select a persona from a searchable drop-down menu
+•	Optionally select a difficulty level (e.g., Easy / Medium / Hard)
+1.2.	The dashboard must display a clear summary of: 
+•	Scenario goal(s)
+•	Persona traits and behavior notes
+•	Suggested skill focus
+1.3.	Users must be able to start a role play with a single primary action (e.g., “Start Role Play”).
+
+1.2. Role Play Session (Voice-First Conversational UI)
+•	1.2.1. The role play must take place in a dedicated session view with a conversation layout showing: 
+o	A voice interaction panel
+o	A transcript panel (live transcript is acceptable)
+o	Session controls (pause/end/restart)
+•	1.2.2. The system must support: 
+o	User turns captured from microphone audio
+o	AI persona turns returned as speech audio playback
+o	A visible “session state” indicator (e.g., Listening / Processing / Speaking / Paused / Ended)
+•	1.2.3. Voice Input Requirements 
+o	1.2.3.1. Users must be able to speak via: 
+	Push-to-talk (press and hold) or
+	Tap-to-record (start/stop)
+o	1.2.3.2. The UI must show a clear recording indicator (timer + mic icon) and a live input level meter (or waveform).
+o	1.2.3.3. The UI must support canceling a recording before submission.
+o	1.2.3.4. The UI must handle microphone permission denial with clear guidance and recovery steps.
+•	1.2.4. Voice Output Requirements 
+o	1.2.4.1. AI responses must be played back as audio (speech).
+o	1.2.4.2. The UI must include playback controls: 
+	Mute/unmute
+	Volume
+	Stop / skip current AI speech
+o	1.2.4.3. A visible indicator must show when the AI is speaking.
+•	1.2.5. Conversational Experience 
+o	1.2.5.1. The experience must support streaming / incremental rendering: 
+	Progressive transcript rendering (partial STT results and/or partial AI response text)
+	Optional “typing/thinking” indicator while generating speech
+o	1.2.5.2. The transcript must clearly distinguish user vs persona turns, with timestamps.
+o	1.2.5.3. The UI should maintain conversation context so users can continue naturally without repeating setup.
+•	1.2.7. Robustness 
+o	1.2.7.1. The UI must include robust handling for: 
+	Model/service errors (retry, helpful messaging)
+	Timeouts (graceful recovery)
+	Empty responses or malformed payloads
+	Audio playback failures (e.g., codec not supported)
+
+1.3. Coaching & Feedback Summary
+•	1.3.1. Upon ending a session, the system must display a feedback summary page including: 
+o	A short overall assessment (e.g., strengths + improvement areas)
+o	A list of actionable coaching tips
+o	A session transcript (readable, scrollable, and copyable)
+•	1.3.2. The system must highlight at least three (3) moments in the conversation that: 
+o	Demonstrate good practice, and/or
+o	Need improvement (e.g., missed question, weak next step)
+•	1.3.3. The feedback view must allow exporting: 
+o	Transcript (copy to clipboard or download .txt/.json)
+o	Optional audio artifacts (e.g., download recorded user turns) if implemented
+•	1.3.4. The feedback view must include basic session metadata: 
+o	Scenario, persona, duration, number of turns
+
+1.4. Admin Console (Scenario & Persona Configuration)
+•	1.4.1. The web application must provide an admin area (route or mode switch is sufficient) that enables admin users to: 
+o	Create, edit, and delete scenarios
+o	Create, edit, and delete personas
+•	1.4.2. Admin forms must support: 
+o	Validation (required fields, reasonable max lengths)
+o	Preview capability (e.g., “Preview persona behavior” or “Preview prompt”)
+•	1.4.3. Admin users must be able to configure, per scenario: 
+o	Persona compatibility (which personas are allowed)
+o	Success criteria (goals/checklist)
+o	Optional scoring weights (e.g., Discovery 40%, Objection handling 30%, Closing 30%)
+o	Optional voice behavior configuration (e.g., “interrupt frequency”, “speaking pace”, “tone style”)
+•	1.4.4. Changes made in the admin console must be reflected immediately in the learner dashboard without requiring a rebuild.
+
+
+Non-Functional Requirements
+
+2.1. Latency (Minimum / Best Effort)
+For all user interactions (starting session, recording audio, submitting a turn, receiving an AI response), the system must demonstrate minimal perceived latency, especially for voice.
+•	2.1.1. After the user submits a turn (stops recording), the UI must show a response indicator within 300ms (e.g., “Processing…”, “Generating response…”).
+•	2.1.2. The app must render the first visible output quickly: 
+o	Live/partial transcript update ≤ 1.5 seconds after recording stops (for mocked/local STT, or best effort with real STT)
+•	2.1.3. The app must start AI speech playback (time-to-first-audio) within: 
+o	≤ 2.5 seconds for mocked/local responses, or
+o	Best effort for real model calls (but must implement progressive states and streaming where possible)
+•	2.1.4. The UI must never “freeze” while waiting; it must remain responsive to scrolling, navigation, and cancel actions.
+ 
+Deliverables
+
+Functional Demo
+•	A working prototype of the above outlined tool.
+•	Can be hosted locally (e.g., via localhost) or deployed on a cloud environment.
+•	Must demonstrate the fulfillment of the acceptance criteria mentioned above 
+
+Source Code Package
+•	All code developed for the project, including frontend, backend, and data processing components.
+•	Delivered either as: 
+o	A compressed folder sent by email, or
+o	A hosted repository on platforms such as GitHub.
+
+Technical Documentation
+•	A concise document describing: 
+o	Core features of the solution.
+o	Technical approach and rationale behind key design decisions.
+o	High level system architecture (including diagrams if applicable).
+o	Dependencies and requirements.
+•	Should enable another engineer to understand and extend the system.
+
+
+Technical Guidelines & Suggestions
+
+•	The primary focus is the functionality and voice UX quality of the role player; pay less attention to visual polish
+•	Prioritize core features and basic scalability to address the business problem, aim to avoid over engineering your solution.
+•	Utilize modern design patterns, such as multi-agent systems, skills, or others when applicable
+•	You are strongly encouraged to use any AI coding tool available to you. This includes both the design, development, and testing of your solution.
+•	You are free to use any open-source libraries, tools, or frameworks as part of this MvP
+•	Make sure you document your solution in a way that the overall architecture is understandable and outlines your key design choices and tech stack 
+
+ 	Good Luck!
+
+

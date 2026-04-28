@@ -1,0 +1,95 @@
+[
+  {
+    "id": "scenario-price-objection",
+    "name": "Price Objection",
+    "description": "The prospect believes your solution is too expensive and is pushing back on cost. Your goal is to reframe value, justify the investment with ROI, and move toward a next step.",
+    "goals": [
+      "Acknowledge the concern without immediately discounting",
+      "Quantify the cost of inaction or the current problem",
+      "Present ROI or payback period using the prospect's own numbers",
+      "Introduce flexible options (phased rollout, pilot) if resistance remains",
+      "Secure a clear next step"
+    ],
+    "suggestedSkillFocus": "Value-based selling, ROI storytelling, handling objections without conceding on price",
+    "compatiblePersonaIds": [
+      "persona-skeptical-sam",
+      "persona-rushed-rachel",
+      "persona-friendly-fiona"
+    ],
+    "scoringWeights": [
+      { "category": "Discovery", "weight": 25 },
+      { "category": "Value Articulation", "weight": 35 },
+      { "category": "Objection Handling", "weight": 30 },
+      { "category": "Closing", "weight": 10 }
+    ],
+    "voiceBehavior": {
+      "interruptFrequency": "medium",
+      "speakingPace": "normal",
+      "toneStyle": "challenging"
+    },
+    "createdAt": "2026-04-27T00:00:00.000Z",
+    "updatedAt": "2026-04-27T00:00:00.000Z"
+  },
+  {
+    "id": "scenario-upsell-opportunity",
+    "name": "Upsell Opportunity",
+    "description": "An existing customer is on a basic plan. You have identified that they would benefit from the premium tier. Your goal is to uncover expanded needs and present the upgrade compellingly.",
+    "goals": [
+      "Open with genuine curiosity about how they are currently using the product",
+      "Identify a pain point or growth area not solved by their current plan",
+      "Connect the premium feature directly to their specific situation",
+      "Handle the 'we're already paying enough' objection",
+      "Close on a trial upgrade or a demo of the advanced features"
+    ],
+    "suggestedSkillFocus": "Consultative discovery, cross-sell framing, building on existing trust",
+    "compatiblePersonaIds": [
+      "persona-friendly-fiona",
+      "persona-detail-david",
+      "persona-rushed-rachel"
+    ],
+    "scoringWeights": [
+      { "category": "Discovery", "weight": 40 },
+      { "category": "Value Articulation", "weight": 25 },
+      { "category": "Objection Handling", "weight": 20 },
+      { "category": "Closing", "weight": 15 }
+    ],
+    "voiceBehavior": {
+      "interruptFrequency": "low",
+      "speakingPace": "normal",
+      "toneStyle": "friendly"
+    },
+    "createdAt": "2026-04-27T00:00:00.000Z",
+    "updatedAt": "2026-04-27T00:00:00.000Z"
+  },
+  {
+    "id": "scenario-renewal-conversation",
+    "name": "Renewal Conversation",
+    "description": "A contract is coming up for renewal and the customer has expressed uncertainty. There may be a competing offer on the table. Your goal is to reinforce value delivered, address dissatisfaction, and retain the account.",
+    "goals": [
+      "Acknowledge the renewal milestone and express appreciation",
+      "Proactively surface and address any lingering dissatisfaction",
+      "Summarise the value and outcomes delivered over the contract period",
+      "Neutralise the competing offer without disparaging the competitor",
+      "Close on a renewed or expanded agreement"
+    ],
+    "suggestedSkillFocus": "Account retention, competitive positioning, value recap, proactive objection handling",
+    "compatiblePersonaIds": [
+      "persona-skeptical-sam",
+      "persona-detail-david",
+      "persona-friendly-fiona"
+    ],
+    "scoringWeights": [
+      { "category": "Discovery", "weight": 30 },
+      { "category": "Value Articulation", "weight": 30 },
+      { "category": "Objection Handling", "weight": 25 },
+      { "category": "Closing", "weight": 15 }
+    ],
+    "voiceBehavior": {
+      "interruptFrequency": "low",
+      "speakingPace": "slow",
+      "toneStyle": "measured"
+    },
+    "createdAt": "2026-04-27T00:00:00.000Z",
+    "updatedAt": "2026-04-27T00:00:00.000Z"
+  }
+]
