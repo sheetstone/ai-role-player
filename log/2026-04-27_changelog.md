@@ -208,6 +208,39 @@ Improve the user experience for selecting scenarios and personas by providing pr
 
 ---
 
+## 5. FP-E — STT Pipeline
+
+**Spec reference:** `plan/2026-04-27_function-points_v1.md`, domain E (FP-E01 – FP-E03)
+
+### Files created
+
+#### `backend/src/routes/audio.ts` (FP-E01)
+- Implemented `POST /api/audio/transcribe` endpoint.
+- Uses `multer` for multi-part form data handling (temporary file storage in `uploads/`).
+- Integrates `OpenAI Whisper` (`whisper-1` model) for high-accuracy speech-to-text.
+- Automatic cleanup of temporary audio files after processing or on error.
+
+#### `frontend/src/components/session/SttFallbackInput.tsx` (FP-E03)
+- Text input component that appears after repeated STT failures.
+- Allows users to continue the role-play via manual text entry (Lesson 5: "own the failure, provide an escape hatch").
+- Styled to match the Bento design system.
+
+### Files modified
+
+#### `backend/src/index.ts`
+- Registered the `audioRouter` at `/api/audio`.
+
+#### `frontend/src/pages/SessionPage.tsx` (FP-E02, FP-E03)
+- Implemented `handleTranscribe` callback using `voiceApi.transcribe`.
+- Wired `onBlob` from `useVoiceRecorder` to trigger the transcription pipeline.
+- Implemented error recovery logic: tracking `sttErrorCount` and showing `SttFallbackInput` after 2 failures.
+- Synchronous state transition to `processing` within 300ms of recording stop.
+
+#### `frontend/src/components/session/VoicePanel.module.css`
+- Added styles for the fallback text input container and its children.
+
+---
+
 ## Status after this session
 
 | FP | Description | Status |
@@ -223,8 +256,8 @@ Improve the user experience for selecting scenarios and personas by providing pr
 | FP-D01 | SessionContext + useReducer state machine | ✅ Done (prior work) |
 | FP-D02 | Session state visual indicator | ✅ Done |
 | FP-D03 | Audio earcons | ✅ Done |
-| FP-E01–E03 | STT pipeline | ⬜ Next |
-| FP-F01–F04 | LLM Persona Agent | ⬜ Pending |
+| FP-E01–E03 | STT pipeline | ✅ Done |
+| FP-F01–F04 | LLM Persona Agent | ⬜ Next |
 | FP-G01–G04 | TTS Playback | ⬜ Pending |
 | FP-H01–H03 | Transcript Panel | ⬜ Pending |
 | FP-I01–I06 | Session Controls & Robustness | ⬜ Pending |

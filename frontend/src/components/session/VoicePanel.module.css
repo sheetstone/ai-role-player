@@ -215,3 +215,85 @@
   from { opacity: 0; transform: translateX(-50%) translateY(8px); }
   to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
+
+/* ── Fallback Input ─────────────────────────────────────────────────────── */
+.fallbackContainer {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.fallbackLabel {
+  font-size: var(--text-sm);
+  color: var(--text-2);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.fallbackForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.fallbackInput {
+  padding: 0.75rem var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-1);
+  font-size: var(--text-sm);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.fallbackInput:focus {
+  border-color: var(--orange);
+}
+
+.fallbackActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.fallbackCancel, .fallbackSubmit {
+  padding: 0.5rem var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.fallbackCancel {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-3);
+}
+
+.fallbackCancel:hover {
+  background: var(--surface-3);
+  color: var(--text-2);
+}
+
+.fallbackSubmit {
+  background: var(--orange);
+  border: none;
+  color: #fff;
+}
+
+.fallbackSubmit:hover:not(:disabled) {
+  background: var(--orange-hover);
+}
+
+.fallbackSubmit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

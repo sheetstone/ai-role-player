@@ -1,18 +1,69 @@
-import { useEffect } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useSession } from '../context/SessionContext'
 import { useVoiceRecorder } from '../hooks/useVoiceRecorder'
 import { useEarcons } from '../hooks/useEarcons'
+import { voiceApi } from '../services/voiceApi'
 import VoicePanel from '../components/session/VoicePanel'
 import MicPermissionGuide from '../components/session/MicPermissionGuide'
 import SessionStateIndicator from '../components/session/SessionStateIndicator'
+import SttFallbackInput from '../components/session/SttFallbackInput'
 import styles from './SessionPage.module.css'
 
 export default function SessionPage() {
   const { session, state, dispatch } = useSession()
+  const [sttErrorCount, setSttErrorCount] = useState(0)
+  const [showFallback, setShowFallback] = useState(false)
 
-  // FP-D03: earcons on state transitions (muted flag wired by FP-G02 later)
+  // FP-D03: earcons on state transitions
   useEarcons(state)
+
+  const handleTranscribe = useCallback(async (blob: Blob) => {
+    try {
+      const { text } = await voiceApi.transcribe(blob)
+      if (!text || !text.trim()) {
+        throw new Error('Empty transcription')
+      }
+      
+      // Success: Reset error count and add turn
+      setSttErrorCount(0)
+      dispatch({ 
+        type: 'ADD_TURN', 
+        turn: {
+          id: crypto.randomUUID(),
+          speaker: 'user',
+          text,
+          timestamp: Date.now()
+        }
+      })
+      
+      // FP-F will trigger LLM call here when ADD_TURN is processed
+    } catch (err) {
+      console.error('[SessionPage] Transcribe error:', err)
+      const nextCount = sttErrorCount + 1
+      setSttErrorCount(nextCount)
+      
+      if (nextCount >= 2) {
+        setShowFallback(true)
+      }
+      
+      dispatch({ type: 'ERROR', message: 'Transcription failed. Please try again or type your message.' })
+    }
+  }, [sttErrorCount, dispatch])
+
+  const handleManualSubmit = (text: string) => {
+    setShowFallback(false)
+    setSttErrorCount(0)
+    dispatch({ 
+      type: 'ADD_TURN', 
+      turn: {
+        id: crypto.randomUUID(),
+        speaker: 'user',
+        text,
+        timestamp: Date.now()
+      }
+    })
+  }
 
   const {
     permissionState,
@@ -31,8 +82,7 @@ export default function SessionPage() {
     onBlob: (blob) => {
       // Transition to processing immediately (within 300ms — FP-E02)
       dispatch({ type: 'STOP_RECORDING' })
-      // FP-E02 will wire this blob to the STT → LLM → TTS pipeline
-      console.log('[SessionPage] audio blob ready:', blob.size, 'bytes, type:', blob.type)
+      handleTranscribe(blob)
     },
   })
 
@@ -77,19 +127,27 @@ export default function SessionPage() {
       {permissionState === 'denied' ? (
         <MicPermissionGuide onRetry={requestPermission} />
       ) : permissionState === 'granted' ? (
-        <VoicePanel
-          isRecording={isRecording}
-          recordingSeconds={recordingSeconds}
-          mode={mode}
-          onModeChange={setMode}
-          analyserNode={analyserNode}
-          toastMessage={toastMessage}
-          onPttStart={pttStart}
-          onPttEnd={pttEnd}
-          onToggleRecord={toggleRecord}
-          onCancel={cancel}
-          disabled={voiceDisabled}
-        />
+        <>
+          <VoicePanel
+            isRecording={isRecording}
+            recordingSeconds={recordingSeconds}
+            mode={mode}
+            onModeChange={setMode}
+            analyserNode={analyserNode}
+            toastMessage={toastMessage}
+            onPttStart={pttStart}
+            onPttEnd={pttEnd}
+            onToggleRecord={toggleRecord}
+            onCancel={cancel}
+            disabled={voiceDisabled}
+          />
+          {showFallback && (
+            <SttFallbackInput
+              onSubmit={handleManualSubmit}
+              onCancel={() => setShowFallback(false)}
+            />
+          )}
+        </>
       ) : (
         <p className={styles.requesting} role="status" aria-busy="true">
           Requesting microphone access…
