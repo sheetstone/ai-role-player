@@ -241,6 +241,45 @@ Improve the user experience for selecting scenarios and personas by providing pr
 
 ---
 
+## 6. Gemini Migration & FP-F — LLM Persona Agent
+
+**Motivation:**  
+Switched the backend AI stack from OpenAI to **Google Gemini** to utilize a single API key for both multi-modal transcription (STT) and conversational responses (LLM).
+
+### Files created
+
+#### `backend/src/agents/personaAgent.ts` (FP-F01, FP-F02)
+- Implemented `streamTurn` using `@google/generative-ai`.
+- Uses `gemini-1.5-flash` for low-latency responses.
+- Encapsulates complex system prompt logic (Persona Identity, Scenario Context, Difficulty Level, and Conversation Phases).
+- Uses `generateContentStream` for real-time token delivery to the frontend.
+
+#### `backend/src/routes/chat.ts` (FP-F02)
+- Implemented `POST /api/chat/turn` SSE endpoint.
+- Orchestrates data loading (personas/scenarios) and stream generation.
+- Correctly formats `text/event-stream` chunks for consumption by the `useStreamingTranscript` hook.
+
+#### `frontend/src/hooks/useStreamingTranscript.ts` (FP-F03)
+- Custom hook to manage SSE connection and incremental transcript updates.
+- Synchronizes with `SessionContext` to add and update partial AI turns.
+- Includes auto-cancellation of previous streams to prevent race conditions.
+
+### Files modified
+
+#### `backend/src/routes/audio.ts` (FP-E01 refactor)
+- Refactored transcription endpoint to use Gemini 1.5 Flash's native audio processing instead of OpenAI Whisper.
+- Supports `audio/webm` and `audio/wav` via base64 encoding.
+
+#### `backend/package.json`
+- Added `@google/generative-ai`.
+- Removed `openai`.
+
+#### `frontend/src/pages/SessionPage.tsx`
+- Integrated `useStreamingTranscript` hook.
+- Added `useEffect` to trigger AI response automatically when a completed user turn is detected in the state machine.
+
+---
+
 ## Status after this session
 
 | FP | Description | Status |
@@ -256,9 +295,9 @@ Improve the user experience for selecting scenarios and personas by providing pr
 | FP-D01 | SessionContext + useReducer state machine | ✅ Done (prior work) |
 | FP-D02 | Session state visual indicator | ✅ Done |
 | FP-D03 | Audio earcons | ✅ Done |
-| FP-E01–E03 | STT pipeline | ✅ Done |
-| FP-F01–F04 | LLM Persona Agent | ⬜ Next |
-| FP-G01–G04 | TTS Playback | ⬜ Pending |
+| FP-E01–E03 | STT pipeline | ✅ Done (Refactored to Gemini) |
+| FP-F01–F04 | LLM Persona Agent | ✅ Done (Gemini) |
+| FP-G01–G04 | TTS Playback | ⬜ Next |
 | FP-H01–H03 | Transcript Panel | ⬜ Pending |
 | FP-I01–I06 | Session Controls & Robustness | ⬜ Pending |
 | FP-J01–J07 | Feedback & Export | ⬜ Pending |
@@ -267,4 +306,4 @@ Improve the user experience for selecting scenarios and personas by providing pr
 
 ## Next step
 
-**FP-E — STT Pipeline** (FP-E01 backend transcribe endpoint, FP-E02 frontend blob→transcript, FP-E03 failure recovery).
+**FP-G — TTS Playback** (Implementation of voice output for AI responses).

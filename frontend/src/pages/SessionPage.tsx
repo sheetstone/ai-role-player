@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useSession } from '../context/SessionContext'
 import { useVoiceRecorder } from '../hooks/useVoiceRecorder'
 import { useEarcons } from '../hooks/useEarcons'
+import { useStreamingTranscript } from '../hooks/useStreamingTranscript'
 import { voiceApi } from '../services/voiceApi'
 import VoicePanel from '../components/session/VoicePanel'
 import MicPermissionGuide from '../components/session/MicPermissionGuide'
@@ -14,9 +15,20 @@ export default function SessionPage() {
   const { session, state, dispatch } = useSession()
   const [sttErrorCount, setSttErrorCount] = useState(0)
   const [showFallback, setShowFallback] = useState(false)
+  const { streamTurn } = useStreamingTranscript()
 
   // FP-D03: earcons on state transitions
   useEarcons(state)
+
+  // Trigger AI response when a new user turn is added
+  useEffect(() => {
+    if (!session || state !== 'processing') return
+
+    const lastTurn = session.turns[session.turns.length - 1]
+    if (lastTurn && lastTurn.speaker === 'user' && !lastTurn.partial) {
+      streamTurn(lastTurn.text)
+    }
+  }, [session?.turns.length, state, session, streamTurn])
 
   const handleTranscribe = useCallback(async (blob: Blob) => {
     try {

@@ -1,14 +1,13 @@
 import { Router } from 'express'
 import multer from 'multer'
-import OpenAI from 'openai'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 import fs from 'fs'
 
 const router = Router()
 const upload = multer({ dest: 'uploads/' })
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
+const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || 'gemini-2.5-flash' })
 
 router.post('/transcribe', upload.single('audio'), async (req, res, next) => {
   try {
@@ -17,21 +16,32 @@ router.post('/transcribe', upload.single('audio'), async (req, res, next) => {
       return
     }
 
-    const fileStream = fs.createReadStream(req.file.path)
-    
-    // Whisper supports many formats, but we explicitly tell it webm since frontend sends webm
-    const transcription = await openai.audio.transcriptions.create({
-      file: fileStream,
-      model: 'whisper-1',
-    })
+    // Read file and convert to base64
+    const audioData = fs.readFileSync(req.file.path)
+    const base64Audio = audioData.toString('base64')
+
+    // Gemini 1.5 can process audio directly
+    const result = await model.generateContent([
+      {
+        inlineData: {
+          mimeType: req.file.mimetype === 'audio/webm' ? 'audio/webm' : 'audio/wav',
+          data: base64Audio
+        }
+      },
+      { text: "Transcribe this audio. Return ONLY the transcription text, nothing else." },
+    ])
+
+    const response = await result.response
+    const text = response.text().trim()
 
     // Clean up temporary file
     fs.unlink(req.file.path, (err) => {
       if (err) console.error('Failed to delete temp file:', err)
     })
 
-    res.json({ text: transcription.text })
+    res.json({ text })
   } catch (error) {
+    console.error('Gemini STT Error:', error)
     // Clean up temp file even on error
     if (req.file) {
       fs.unlink(req.file.path, () => {})
