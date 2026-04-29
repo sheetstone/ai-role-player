@@ -1,12 +1,13 @@
 import { Router } from 'express'
 import { streamTurn } from '../agents/personaAgent.js'
 import { readScenarios, readPersonas } from './admin.js'
+import type { Persona, Scenario } from '../types/index.js'
 
 const router = Router()
 
 router.post('/turn', async (req, res, next) => {
   try {
-    const { personaId, scenarioId, difficulty, history, userText } = req.body
+    const { personaId, scenarioId, difficulty, history, userText, llmModel } = req.body
 
     const [personasData, scenariosData] = await Promise.all([
       readPersonas(),
@@ -28,13 +29,14 @@ router.post('/turn', async (req, res, next) => {
 
     let fullText = ''
     try {
-      const stream = streamTurn(persona, scenario, difficulty, history, userText)
+      const stream = streamTurn(persona, scenario, difficulty, history, userText, llmModel)
       
       for await (const chunk of stream) {
         fullText += chunk
         res.write(`data: ${JSON.stringify({ type: 'delta', text: chunk })}\n\n`)
       }
 
+      console.log('[chat] done fullText:', JSON.stringify(fullText))
       res.write(`data: ${JSON.stringify({ type: 'done', fullText })}\n\n`)
       res.end()
     } catch (streamError) {

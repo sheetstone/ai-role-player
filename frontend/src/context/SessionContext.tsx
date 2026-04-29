@@ -65,6 +65,7 @@ function reducer(ctx: SessionContextState, action: Action): SessionContextState 
       if (!session) return ctx
       return {
         ...ctx,
+        error: null,  // clear any stale error on successful forward progress
         session: { ...session, turns: [...session.turns, action.turn] },
       }
 
@@ -83,7 +84,7 @@ function reducer(ctx: SessionContextState, action: Action): SessionContextState 
     case 'AUDIO_COMPLETE':
     case 'SKIP_AI':
       if (state !== 'speaking') return ctx
-      return { ...ctx, state: 'listening' }
+      return { ...ctx, error: null, state: 'listening' }
 
     case 'PAUSE_SESSION':
       if (state === 'paused' || state === 'ended' || state === 'idle') return ctx

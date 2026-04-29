@@ -84,9 +84,6 @@ export default function DashboardPage() {
         <p className={styles.eyebrow}>Sales Training</p>
         <h1 className={styles.title}>AI Role Player</h1>
         <p className={styles.subtitle}>Practice customer conversations with AI-simulated personas</p>
-        <nav className={styles.adminLink}>
-          <a href="/admin">Admin Console →</a>
-        </nav>
       </header>
 
       {fetchError && (

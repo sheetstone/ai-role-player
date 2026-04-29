@@ -102,8 +102,9 @@ export interface ChatTurnRequest {
   personaId: string
   scenarioId: string
   difficulty: 'easy' | 'medium' | 'hard'
-  history: { role: 'user' | 'assistant'; content: string }[]
+  history: Pick<Turn, 'id' | 'speaker' | 'text' | 'timestamp' | 'partial'>[]
   userText: string
+  llmModel?: string
 }
 
 export type SseEvent =
@@ -115,6 +116,7 @@ export interface FeedbackRequest {
   turns: Pick<Turn, 'id' | 'speaker' | 'text' | 'timestamp'>[]
   scenarioId: string
   personaId: string
+  llmModel?: string
 }
 
 export interface ApiError {

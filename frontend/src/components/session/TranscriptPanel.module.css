@@ -1,0 +1,177 @@
+/* ── Container ───────────────────────────────────────────────────────────────── */
+
+.wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+}
+
+.scroll {
+  width: 100%;
+  min-height: 240px;
+  max-height: 44vh;
+  overflow-y: auto;
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  scroll-behavior: auto; /* instant for auto-scroll; smooth only for jump button */
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────────────── */
+
+.empty {
+  color: var(--text-4);
+  font-size: var(--text-sm);
+  text-align: center;
+  padding: var(--space-8) 0;
+  margin: 0;
+}
+
+/* ── Turn list ───────────────────────────────────────────────────────────────── */
+
+.turnList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* ── Individual turn ─────────────────────────────────────────────────────────── */
+
+.turn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-width: 80%;
+}
+
+/* User turns: left-aligned */
+.turnUser {
+  align-self: flex-start;
+}
+
+/* Persona turns: right-aligned */
+.turnPersona {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+/* ── Turn metadata row ───────────────────────────────────────────────────────── */
+
+.turnMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.turnUser .turnMeta {
+  flex-direction: row;
+}
+
+.turnPersona .turnMeta {
+  flex-direction: row-reverse;
+}
+
+.speaker {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.timestamp {
+  font-size: var(--text-xs);
+  color: var(--text-4);
+  font-family: var(--font-mono);
+}
+
+/* ── Speech bubbles ──────────────────────────────────────────────────────────── */
+
+.bubble {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  word-break: break-word;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+/* User bubble: coral/orange — the learner's voice */
+.bubbleUser {
+  background: var(--orange-subtle);
+  border: 1px solid var(--orange-border);
+  color: var(--text-1);
+  border-bottom-left-radius: var(--radius-sm);
+}
+
+/* Persona bubble: muted blue — the AI customer */
+.bubblePersona {
+  background: var(--brand-subtle);
+  border: 1px solid var(--brand-border);
+  color: var(--text-1);
+  border-bottom-right-radius: var(--radius-sm);
+}
+
+/* FP-H02: active (currently speaking) turn highlight */
+.bubbleActive {
+  border-color: var(--amber);
+  background: var(--amber-subtle);
+  box-shadow: 0 0 0 2px var(--amber-border);
+}
+
+.text {
+  white-space: pre-wrap;
+}
+
+/* ── Partial (streaming) cursor — FP-H01 ─────────────────────────────────────── */
+
+.cursor {
+  display: inline-block;
+  width: 2px;
+  height: 0.85em;
+  background: var(--text-3);
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  border-radius: 1px;
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+/* ── Jump to latest button — FP-H03 ─────────────────────────────────────────── */
+
+.jumpBtn {
+  position: absolute;
+  bottom: var(--space-3);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--space-1) var(--space-4);
+  background: var(--orange);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  white-space: nowrap;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+  z-index: 10;
+}
+
+.jumpBtn:hover {
+  background: var(--orange-hover);
+  transform: translateX(-50%) translateY(-1px);
+}
+
+.jumpBtn:active {
+  transform: translateX(-50%) translateY(0);
+}

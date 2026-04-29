@@ -8,10 +8,10 @@ export async function* streamTurn(
   scenario: Scenario,
   difficulty: string,
   history: Turn[],
-  userText: string
+  userText: string,
+  modelName?: string,
 ) {
-  const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash'
-  const model = genAI.getGenerativeModel({ model: modelName })
+  const resolvedModel = modelName || process.env.GEMINI_MODEL || 'gemini-2.5-flash'
 
   const systemPrompt = `
 You are playing a customer persona in a sales training simulation.
@@ -47,30 +47,36 @@ INSTRUCTIONS:
 - NEVER mention you are an AI.
 `
 
-  const chat = model.startChat({
-    history: history.map(turn => ({
-      role: turn.speaker === 'user' ? 'user' : 'model',
-      parts: [{ text: turn.text }]
-    })),
-    generationConfig: {
-      maxOutputTokens: 200,
-    },
+  const modelWithSystem = genAI.getGenerativeModel({
+    model: resolvedModel,
+    systemInstruction: systemPrompt,
   })
 
-  // Gemini doesn't have a direct "system instructions" in the standard chat history in the same way Claude does for every message, 
-  // but we can prepend the system prompt to the first message or use the dedicated systemInstruction parameter if supported by this SDK version.
-  // For simplicity and compatibility, we'll use a model initialized with system instructions.
-  const modelWithSystem = genAI.getGenerativeModel({ 
-    model: modelName,
-    systemInstruction: systemPrompt 
+  const chat = modelWithSystem.startChat({
+    history: history
+      .filter(t => !t.partial)
+      .map(turn => ({
+        role: turn.speaker === 'user' ? 'user' : 'model',
+        parts: [{ text: turn.text }],
+      })),
+    generationConfig: { maxOutputTokens: 1000 },
   })
 
-  const streamingResult = await modelWithSystem.generateContentStream(userText)
+  const streamingResult = await chat.sendMessageStream(userText)
 
+  let agentFullText = ''
+  let chunkCount = 0
   for await (const chunk of streamingResult.stream) {
+    chunkCount++
     const chunkText = chunk.text()
+    console.log(`[personaAgent] chunk ${chunkCount}:`, JSON.stringify(chunkText))
     if (chunkText) {
+      agentFullText += chunkText
       yield chunkText
     }
   }
+  const finalResponse = await streamingResult.response
+  console.log('[personaAgent] finishReason:', finalResponse.candidates?.[0]?.finishReason)
+  console.log('[personaAgent] response.text():', JSON.stringify(finalResponse.text()))
+  console.log('[personaAgent] accumulated text:', JSON.stringify(agentFullText))
 }

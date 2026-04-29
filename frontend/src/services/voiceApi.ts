@@ -1,12 +1,13 @@
-import { ApiRequestError } from './api'
+import { ApiRequestError, retryFetch } from './api'
 import type { TranscribeResponse, ChatTurnRequest, FeedbackRequest, FeedbackResult } from '../types'
 
 export const voiceApi = {
-  transcribe: async (blob: Blob): Promise<TranscribeResponse> => {
+  transcribe: async (blob: Blob, sttModel?: string): Promise<TranscribeResponse> => {
     const form = new FormData()
     form.append('audio', blob, 'recording.webm')
+    if (sttModel) form.append('sttModel', sttModel)
 
-    const res = await fetch('/api/audio/transcribe', { method: 'POST', body: form })
+    const res = await retryFetch('/api/audio/transcribe', { method: 'POST', body: form })
     if (!res.ok) {
       const body = await res.json().catch(() => ({ error: res.statusText }))
       throw new ApiRequestError(res.status, body.error ?? res.statusText)
@@ -27,11 +28,12 @@ export const voiceApi = {
     }),
 
   // Returns a fetch Response with a binary audio stream
-  speak: (text: string, voice?: string): Promise<Response> =>
-    fetch('/api/tts/speak', {
+  speak: (text: string, voice?: string, signal?: AbortSignal, ttsModel?: string): Promise<Response> =>
+    retryFetch('/api/tts/speak', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, voice }),
+      body: JSON.stringify({ text, voice, ttsModel }),
+      signal,
     }),
 
   generateFeedback: async (payload: FeedbackRequest): Promise<FeedbackResult> => {

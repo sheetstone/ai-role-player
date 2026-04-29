@@ -1,0 +1,116 @@
+.viewer {
+  width: 100%;
+  max-width: 640px;
+  max-height: 480px;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-width: 88%;
+}
+
+.itemUser   { align-self: flex-start; }
+.itemPersona { align-self: flex-end;  }
+
+.meta {
+  display: flex;
+  gap: var(--space-2);
+  align-items: baseline;
+}
+
+.itemPersona .meta { flex-direction: row-reverse; }
+
+.speaker {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-3);
+}
+
+.timestamp {
+  font-size: var(--text-xs);
+  font-family: var(--font-mono);
+  color: var(--text-4);
+}
+
+.bubble {
+  position: relative;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  border: 1.5px solid;
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  color: var(--text-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.bubbleUser {
+  background: var(--orange-subtle);
+  border-color: var(--orange-border);
+  border-bottom-left-radius: var(--radius-sm);
+}
+
+.bubblePersona {
+  background: var(--brand-subtle);
+  border-color: var(--brand-border);
+  border-bottom-right-radius: var(--radius-sm);
+}
+
+/* Key moment overrides */
+.bubbleGood {
+  border-color: var(--green);
+  background: var(--green-subtle);
+}
+
+.bubbleImprovement {
+  border-color: var(--amber);
+  background: var(--amber-subtle);
+}
+
+.inlineBadge {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 0.1rem 0.55rem;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  margin-top: var(--space-1);
+}
+
+.inlineBadgeGood {
+  background: var(--green-subtle);
+  color: var(--green);
+  border: 1px solid var(--green-border);
+}
+
+.inlineBadgeImprovement {
+  background: var(--amber-subtle);
+  color: var(--amber);
+  border: 1px solid var(--amber-border);
+}
+
+.empty {
+  color: var(--text-4);
+  font-size: var(--text-sm);
+  text-align: center;
+  padding: var(--space-8);
+}

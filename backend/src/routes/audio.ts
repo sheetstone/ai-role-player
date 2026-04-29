@@ -7,7 +7,6 @@ const router = Router()
 const upload = multer({ dest: 'uploads/' })
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
-const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || 'gemini-2.5-flash' })
 
 router.post('/transcribe', upload.single('audio'), async (req, res, next) => {
   try {
@@ -16,11 +15,16 @@ router.post('/transcribe', upload.single('audio'), async (req, res, next) => {
       return
     }
 
+    const sttModel = (req.body as { sttModel?: string }).sttModel
+      || process.env.GEMINI_MODEL
+      || 'gemini-2.5-flash'
+    const model = genAI.getGenerativeModel({ model: sttModel })
+
     // Read file and convert to base64
     const audioData = fs.readFileSync(req.file.path)
     const base64Audio = audioData.toString('base64')
 
-    // Gemini 1.5 can process audio directly
+    // Gemini Flash can process audio directly for transcription
     const result = await model.generateContent([
       {
         inlineData: {
