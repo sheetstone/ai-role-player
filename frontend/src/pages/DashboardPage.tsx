@@ -93,7 +93,9 @@ export default function DashboardPage() {
 
       <header className={styles.header}>
         <p className={styles.eyebrow}>Sales Training</p>
-        <h1 className={styles.title}>AI Role Player</h1>
+        <h1 className={styles.title}>
+          <img src="/logo-wordmark.svg" alt="AI Role Player" className={styles.logoWordmark} />
+        </h1>
         <p className={styles.subtitle}>Practice customer conversations with AI-simulated personas</p>
       </header>
 

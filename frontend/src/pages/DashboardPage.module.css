@@ -42,6 +42,13 @@
   color: var(--text-1);
   letter-spacing: -0.04em;
   line-height: 1.1;
+  margin: 0;
+}
+
+.logoWordmark {
+  height: 65px;
+  width: auto;
+  display: block;
 }
 
 .subtitle {
