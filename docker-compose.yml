@@ -2,7 +2,7 @@ services:
   backend:
     build: ./backend
     restart: unless-stopped
-    env_file: .env
+    env_file: ./backend/.env
     # admin-data volume is mounted over dist/data so persona/scenario JSON
     # changes survive container restarts. On first run Docker seeds the volume
     # from the image (the default JSON files baked in during build).
