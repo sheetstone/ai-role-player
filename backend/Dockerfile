@@ -1,0 +1,25 @@
+# ── Build stage ───────────────────────────────────────────────────────────────
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY tsconfig.json ./
+COPY src ./src
+RUN npm run build
+
+# tsc only emits .js — copy the JSON seed data files manually
+RUN cp -r src/data dist/data
+
+# ── Runtime stage ──────────────────────────────────────────────────────────────
+FROM node:20-alpine
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+COPY --from=builder /app/dist ./dist
+
+EXPOSE 3001
+CMD ["node", "dist/index.js"]

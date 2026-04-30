@@ -13,7 +13,7 @@ const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3001
 
 const app = express()
 
-app.use(cors({ origin: 'http://localhost:5173' }))
+app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:5173' }))
 app.use(express.json())
 
 app.use('/api/health', healthRouter)
