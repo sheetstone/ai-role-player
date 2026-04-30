@@ -1,14 +1,24 @@
 import { useEffect, useRef } from 'react'
 
 interface WaveformCanvasProps {
+  /** The Web Audio AnalyserNode to read frequency data from. Null = show idle flat line. */
   analyserNode: AnalyserNode | null
+  /** When true, runs the requestAnimationFrame loop to draw live audio data. */
   isRecording: boolean
+  /** Optional CSS class for sizing/positioning the canvas. */
   className?: string
 }
 
-// Color values matching the Bento CSS design tokens
-const COLOR_ACTIVE = '#C4784A' // --orange
-const COLOR_IDLE = '#E8D5C0' // --border
+/**
+ * Draws a live audio waveform while the user is recording, or a flat idle line
+ * when not recording. Uses `requestAnimationFrame` for smooth 60fps animation.
+ *
+ * Colors are read from CSS custom properties (`--orange` and `--border`) so
+ * they automatically adapt to any theme changes without touching this file.
+ *
+ * The canvas is marked `aria-hidden` — screen reader users rely on the
+ * recording timer and button state, not this visual indicator.
+ */
 
 export default function WaveformCanvas({ analyserNode, isRecording, className }: WaveformCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -21,12 +31,16 @@ export default function WaveformCanvas({ analyserNode, isRecording, className }:
     const W = canvas.width
     const H = canvas.height
 
+    // Read colors from CSS design tokens so they stay in sync with the theme
+    const computed = getComputedStyle(canvas)
+    const colorActive = computed.getPropertyValue('--orange').trim() || '#C4784A'
+    const colorIdle = computed.getPropertyValue('--border').trim() || '#E8D5C0'
+
     if (!isRecording || !analyserNode) {
       cancelAnimationFrame(rafRef.current)
-      // Draw a flat center line as a placeholder
       ctx.clearRect(0, 0, W, H)
       ctx.beginPath()
-      ctx.strokeStyle = COLOR_IDLE
+      ctx.strokeStyle = colorIdle
       ctx.lineWidth = 1.5
       ctx.moveTo(0, H / 2)
       ctx.lineTo(W, H / 2)
@@ -43,7 +57,7 @@ export default function WaveformCanvas({ analyserNode, isRecording, className }:
 
       ctx.clearRect(0, 0, W, H)
       ctx.beginPath()
-      ctx.strokeStyle = COLOR_ACTIVE
+      ctx.strokeStyle = colorActive
       ctx.lineWidth = 2
       ctx.lineJoin = 'round'
 

@@ -2,6 +2,18 @@ import { useSession } from '../../context/SessionContext'
 import type { SessionState } from '../../types'
 import styles from './SessionStateIndicator.module.css'
 
+/**
+ * A visual pill that always shows the current session state. It reads state
+ * directly from `useSession()` so it never needs props.
+ *
+ * Each state maps to a different icon and color via `STATE_CONFIG`:
+ * - **idle / listening / paused / ended** → colored dot
+ * - **processing** → spinning loader
+ * - **speaking** → three animated wave bars
+ *
+ * Uses `aria-live="polite"` so screen readers announce state changes without
+ * interrupting ongoing announcements.
+ */
 type IndicatorType = 'dot' | 'spinner' | 'wave'
 
 interface StateConfig {

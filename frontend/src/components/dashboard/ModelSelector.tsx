@@ -3,6 +3,16 @@ import { Link } from 'react-router-dom'
 import { useModelConfig, LLM_OPTIONS, TTS_OPTIONS } from '../../hooks/useModelConfig'
 import styles from './ModelSelector.module.css'
 
+/**
+ * A gear icon button in the dashboard header that opens a settings panel for
+ * choosing the LLM and TTS model. Also links to the Admin Console.
+ *
+ * The panel closes when the user clicks outside it or presses Escape
+ * (Escape is handled implicitly by the mousedown-outside listener).
+ *
+ * Model selections are persisted via `useModelConfig` (localStorage), so they
+ * survive page refreshes.
+ */
 export default function ModelSelector() {
   const { llmModel, ttsModel, setLlmModel, setTtsModel } = useModelConfig()
   const [open, setOpen] = useState(false)

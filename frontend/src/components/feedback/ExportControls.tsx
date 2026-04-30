@@ -1,20 +1,25 @@
 import { useState } from 'react'
 import type { Session, FeedbackResult } from '../../types'
+import { formatElapsed, slugify } from '../../utils'
+import { COPY_FEEDBACK_TIMEOUT_MS } from '../../constants'
 import styles from './ExportControls.module.css'
 
 interface ExportControlsProps {
+  /** The completed session — used to build the transcript text and derive the filename. */
   session: Session
+  /** The AI-generated feedback to include in the export. If null, the export still works without it. */
   feedback: FeedbackResult | null
 }
 
-function formatElapsed(ms: number): string {
-  const s = Math.floor(Math.abs(ms) / 1000)
-  const h = Math.floor(s / 3600)
-  const m = Math.floor((s % 3600) / 60)
-  const sec = s % 60
-  if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`
-  return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`
-}
+/**
+ * Toolbar with three export actions for the session transcript:
+ * - **Copy transcript** — copies formatted plain text to the clipboard (button shows "✓ Copied!" briefly)
+ * - **Download .txt** — triggers a browser download of the formatted transcript
+ * - **Download .json** — triggers a browser download of the raw session + feedback data
+ *
+ * The filename is derived from the scenario name via `slugify` so it's safe for
+ * all operating systems (e.g. "cold-call-scenario-transcript.txt").
+ */
 
 function buildTxtContent(session: Session, feedback: FeedbackResult | null): string {
   const duration = session.endedAt
@@ -59,12 +64,12 @@ function triggerDownload(content: string, filename: string, mime: string) {
 export default function ExportControls({ session, feedback }: ExportControlsProps) {
   const [copied, setCopied] = useState(false)
 
-  const slug = session.scenario.name.toLowerCase().replace(/\s+/g, '-').slice(0, 30)
+  const slug = slugify(session.scenario.name)
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(buildTxtContent(session, feedback))
     setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    setTimeout(() => setCopied(false), COPY_FEEDBACK_TIMEOUT_MS)
   }
 
   const handleTxt = () => {

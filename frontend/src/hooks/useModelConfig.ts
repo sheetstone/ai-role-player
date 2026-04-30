@@ -1,24 +1,13 @@
 import { useState, useCallback } from 'react'
+import { LS_MODEL_CONFIG, LLM_OPTIONS, TTS_OPTIONS } from '../constants'
 
-const STORAGE_KEY = 'ai-role-player:model-config'
+export { LLM_OPTIONS, TTS_OPTIONS }
 
-// ── Model option lists ────────────────────────────────────────────────────────
-// Update the `id` fields if Google releases models under different API names.
-
-export const LLM_OPTIONS = [
-  { label: 'Gemini 2.5 Flash', id: 'gemini-2.5-flash' },
-  { label: 'Gemini 2.5 Flash Lite', id: 'gemini-2.5-flash-lite' },
-  { label: 'Gemini 3 Flash', id: 'gemini-3-flash-preview' },
-  { label: 'Gemini 3.1 Flash Lite', id: 'gemini-3.1-flash-lite-preview' },
-] as const
-
-export const TTS_OPTIONS = [
-  { label: '2.5 Flash TTS', id: 'gemini-2.5-flash-preview-tts' },
-  { label: '3.1 Flash TTS', id: 'gemini-3.1-flash-tts-preview' },
-] as const
-
+/** The currently selected LLM and TTS model IDs. */
 export interface ModelConfig {
+  /** The Gemini model ID used for the LLM chat (e.g. 'gemini-2.5-flash'). */
   llmModel: string
+  /** The Gemini model ID used for text-to-speech (e.g. 'gemini-2.5-flash-preview-tts'). */
   ttsModel: string
 }
 
@@ -29,7 +18,7 @@ const DEFAULT: ModelConfig = {
 
 function load(): ModelConfig {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = localStorage.getItem(LS_MODEL_CONFIG)
     if (!raw) return DEFAULT
     return { ...DEFAULT, ...JSON.parse(raw) }
   } catch {
@@ -38,9 +27,23 @@ function load(): ModelConfig {
 }
 
 function persist(cfg: ModelConfig) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg))
+  try { localStorage.setItem(LS_MODEL_CONFIG, JSON.stringify(cfg)) } catch {}
 }
 
+/**
+ * Reads and saves the user's preferred LLM and TTS model choices.
+ *
+ * Selections are persisted to localStorage so they survive page refreshes.
+ * The `ModelSelector` component in the dashboard header uses this hook to
+ * let the user switch models without reloading the app.
+ *
+ * @example
+ * const { llmModel, ttsModel, setLlmModel, setTtsModel } = useModelConfig()
+ * // Show current selection and let the user change it:
+ * <select value={llmModel} onChange={e => setLlmModel(e.target.value)}>
+ *   {LLM_OPTIONS.map(opt => <option key={opt.id} value={opt.id}>{opt.label}</option>)}
+ * </select>
+ */
 export function useModelConfig() {
   const [config, setConfig] = useState<ModelConfig>(load)
 

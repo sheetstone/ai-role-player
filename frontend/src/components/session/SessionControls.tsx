@@ -1,22 +1,40 @@
 import { useState, useEffect } from 'react'
-import type { SessionState } from '../../types'
+import { useSession } from '../../context/SessionContext'
 import styles from './SessionControls.module.css'
 
 interface SessionControlsProps {
-  state: SessionState
+  /** Stop recording, stop AI playback, and move the session to 'paused'. */
   onPause: () => void
+  /** Move the session back to 'listening'. */
   onResume: () => void
+  /** End the session and navigate to the feedback page. */
   onEnd: () => void
+  /** Reset and restart the session with the same scenario + persona. */
   onRestart: () => void
 }
 
+/**
+ * Pause/Resume/Restart/End toolbar shown during an active session.
+ *
+ * Reads `state` directly from `SessionContext` — no `state` prop needed.
+ * Only the four action callbacks need to be passed as props because they
+ * contain orchestration logic (stopping audio, resetting context, navigating).
+ *
+ * "End" and "Restart" require a confirmation click to prevent accidental
+ * taps (the confirmation replaces the button with "Yes / No"). Any other
+ * button press clears the pending confirmation.
+ *
+ * The Space bar toggles Pause/Resume when focus is not on a form element.
+ * The toolbar is invisible (`null`) when the session is `idle` or `ended`.
+ */
+
 export default function SessionControls({
-  state,
   onPause,
   onResume,
   onEnd,
   onRestart,
 }: SessionControlsProps) {
+  const { state } = useSession()
   const [confirming, setConfirming] = useState<'end' | 'restart' | null>(null)
 
   const isActive = state !== 'idle' && state !== 'ended'

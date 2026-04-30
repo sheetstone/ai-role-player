@@ -1,6 +1,20 @@
+/**
+ * Admin Console — CRUD management for scenarios and personas.
+ *
+ * A tabbed page with two sections: "Scenarios" and "Personas". Each section
+ * shows a card list with Edit and Delete buttons. Clicking "New" or "Edit"
+ * opens an `AdminModal` containing the relevant form.
+ *
+ * Delete uses the `useDeleteConfirm` hook so a two-step confirmation replaces
+ * the delete button before anything is actually removed.
+ *
+ * All changes are immediately reflected in the learner dashboard because
+ * `DashboardPage` re-fetches data on every mount.
+ */
 import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { adminApi } from '../services/adminApi'
+import { useDeleteConfirm } from '../hooks/useDeleteConfirm'
 import type { Scenario, Persona } from '../types'
 import AdminModal from '../components/admin/AdminModal'
 import ScenarioForm from '../components/admin/ScenarioForm'
@@ -11,6 +25,25 @@ type Tab = 'scenarios' | 'personas'
 type ScenarioModal = Scenario | 'new' | null
 type PersonaModal = Persona | 'new' | null
 
+function DeleteConfirmButtons({ id, deletingId, onConfirm, onCancel, onRequest }: {
+  id: string
+  deletingId: string | null
+  onConfirm: (id: string) => void
+  onCancel: () => void
+  onRequest: (id: string) => void
+}) {
+  if (deletingId === id) {
+    return (
+      <span className={styles.confirmGroup}>
+        Delete?
+        <button className={styles.confirmYes} onClick={() => onConfirm(id)}>Yes</button>
+        <button className={styles.confirmNo} onClick={onCancel}>No</button>
+      </span>
+    )
+  }
+  return <button className={styles.deleteBtn} onClick={() => onRequest(id)}>Delete</button>
+}
+
 export default function AdminPage() {
   const [tab, setTab] = useState<Tab>('scenarios')
   const [scenarios, setScenarios] = useState<Scenario[]>([])
@@ -19,8 +52,6 @@ export default function AdminPage() {
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [scenarioModal, setScenarioModal] = useState<ScenarioModal>(null)
   const [personaModal, setPersonaModal] = useState<PersonaModal>(null)
-  const [deletingScenario, setDeletingScenario] = useState<string | null>(null)
-  const [deletingPersona, setDeletingPersona] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -38,43 +69,22 @@ export default function AdminPage() {
 
   useEffect(() => { load() }, [load])
 
-  // ── Scenario CRUD ──────────────────────────────────────────────────────────
+  const scenarioDelete = useDeleteConfirm(async (id) => { await adminApi.deleteScenario(id); await load() })
+  const personaDelete = useDeleteConfirm(async (id) => { await adminApi.deletePersona(id); await load() })
 
   const handleSaveScenario = async (data: Omit<Scenario, 'id' | 'createdAt' | 'updatedAt'>) => {
-    if (scenarioModal === 'new') {
-      await adminApi.createScenario(data)
-    } else {
-      await adminApi.updateScenario((scenarioModal as Scenario).id, data)
-    }
+    if (scenarioModal === 'new') await adminApi.createScenario(data)
+    else await adminApi.updateScenario((scenarioModal as Scenario).id, data)
     setScenarioModal(null)
     await load()
   }
 
-  const handleDeleteScenario = async (id: string) => {
-    await adminApi.deleteScenario(id)
-    setDeletingScenario(null)
-    await load()
-  }
-
-  // ── Persona CRUD ───────────────────────────────────────────────────────────
-
   const handleSavePersona = async (data: Omit<Persona, 'id' | 'createdAt' | 'updatedAt'>) => {
-    if (personaModal === 'new') {
-      await adminApi.createPersona(data)
-    } else {
-      await adminApi.updatePersona((personaModal as Persona).id, data)
-    }
+    if (personaModal === 'new') await adminApi.createPersona(data)
+    else await adminApi.updatePersona((personaModal as Persona).id, data)
     setPersonaModal(null)
     await load()
   }
-
-  const handleDeletePersona = async (id: string) => {
-    await adminApi.deletePersona(id)
-    setDeletingPersona(null)
-    await load()
-  }
-
-  // ── Helpers ────────────────────────────────────────────────────────────────
 
   const diffClass = (d: string) =>
     d === 'easy' ? styles.badgeEasy : d === 'medium' ? styles.badgeMedium : styles.badgeHard
@@ -118,7 +128,6 @@ export default function AdminPage() {
       ) : (
         <section className={styles.section}>
 
-          {/* ── Scenarios ─────────────────────────────────────────────── */}
           {tab === 'scenarios' && (
             <>
               <div className={styles.sectionHeader}>
@@ -139,18 +148,16 @@ export default function AdminPage() {
                       </div>
                     </div>
                     <div className={styles.cardActions}>
-                      <button className={styles.editBtn} onClick={() => { setDeletingScenario(null); setScenarioModal(s) }}>
+                      <button className={styles.editBtn} onClick={() => { scenarioDelete.setDeletingId(null); setScenarioModal(s) }}>
                         Edit
                       </button>
-                      {deletingScenario === s.id ? (
-                        <span className={styles.confirmGroup}>
-                          Delete?
-                          <button className={styles.confirmYes} onClick={() => handleDeleteScenario(s.id)}>Yes</button>
-                          <button className={styles.confirmNo} onClick={() => setDeletingScenario(null)}>No</button>
-                        </span>
-                      ) : (
-                        <button className={styles.deleteBtn} onClick={() => setDeletingScenario(s.id)}>Delete</button>
-                      )}
+                      <DeleteConfirmButtons
+                        id={s.id}
+                        deletingId={scenarioDelete.deletingId}
+                        onConfirm={scenarioDelete.handleDelete}
+                        onCancel={() => scenarioDelete.setDeletingId(null)}
+                        onRequest={scenarioDelete.setDeletingId}
+                      />
                     </div>
                   </div>
                 ))}
@@ -159,7 +166,6 @@ export default function AdminPage() {
             </>
           )}
 
-          {/* ── Personas ──────────────────────────────────────────────── */}
           {tab === 'personas' && (
             <>
               <div className={styles.sectionHeader}>
@@ -181,18 +187,16 @@ export default function AdminPage() {
                       </div>
                     </div>
                     <div className={styles.cardActions}>
-                      <button className={styles.editBtn} onClick={() => { setDeletingPersona(null); setPersonaModal(p) }}>
+                      <button className={styles.editBtn} onClick={() => { personaDelete.setDeletingId(null); setPersonaModal(p) }}>
                         Edit
                       </button>
-                      {deletingPersona === p.id ? (
-                        <span className={styles.confirmGroup}>
-                          Delete?
-                          <button className={styles.confirmYes} onClick={() => handleDeletePersona(p.id)}>Yes</button>
-                          <button className={styles.confirmNo} onClick={() => setDeletingPersona(null)}>No</button>
-                        </span>
-                      ) : (
-                        <button className={styles.deleteBtn} onClick={() => setDeletingPersona(p.id)}>Delete</button>
-                      )}
+                      <DeleteConfirmButtons
+                        id={p.id}
+                        deletingId={personaDelete.deletingId}
+                        onConfirm={personaDelete.handleDelete}
+                        onCancel={() => personaDelete.setDeletingId(null)}
+                        onRequest={personaDelete.setDeletingId}
+                      />
                     </div>
                   </div>
                 ))}
@@ -204,7 +208,6 @@ export default function AdminPage() {
         </section>
       )}
 
-      {/* ── Modals ────────────────────────────────────────────────────────── */}
       {scenarioModal !== null && (
         <AdminModal
           title={scenarioModal === 'new' ? 'New Scenario' : `Edit: ${(scenarioModal as Scenario).name}`}

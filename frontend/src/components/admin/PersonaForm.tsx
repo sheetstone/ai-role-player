@@ -1,16 +1,28 @@
 import { useState } from 'react'
 import type { Persona } from '../../types'
+import { PERSONA_VOICES } from '../../constants'
 import styles from './PersonaForm.module.css'
 
 type FormData = Omit<Persona, 'id' | 'createdAt' | 'updatedAt'>
 
 interface Props {
+  /** Pre-fill the form when editing an existing persona. Omit for "New Persona". */
   initial?: Persona
+  /** Called with the validated form data when the user clicks Save. The parent handles the API call. */
   onSave: (data: FormData) => Promise<void>
+  /** Called when the user clicks Cancel without saving. */
   onCancel: () => void
 }
 
-const VOICES = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'] as const
+/**
+ * Form for creating or editing an AI persona in the Admin Console.
+ *
+ * Key fields:
+ * - **Traits** — comma-separated list, split into an array on submit
+ * - **Voice** — dropdown of available TTS voice names (from `PERSONA_VOICES` in constants)
+ * - **System Prompt** — the full LLM instruction text that defines the persona's behavior in sessions
+ * - **Behavior Notes** — human-readable summary shown to learners on the dashboard preview card
+ */
 
 function defaultForm(): FormData {
   return { name: '', traits: [], behaviorNotes: '', systemPrompt: '', difficulty: 'medium', voice: 'alloy' }
@@ -76,7 +88,7 @@ export default function PersonaForm({ initial, onSave, onCancel }: Props) {
         <div className={styles.field}>
           <label className={styles.label}>Voice</label>
           <select className={styles.select} value={form.voice} onChange={e => set('voice', e.target.value)}>
-            {VOICES.map(v => <option key={v} value={v}>{v}</option>)}
+            {PERSONA_VOICES.map(v => <option key={v} value={v}>{v}</option>)}
           </select>
         </div>
       </div>

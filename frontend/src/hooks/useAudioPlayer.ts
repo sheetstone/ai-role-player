@@ -1,12 +1,34 @@
 import { useCallback, useRef, useState } from 'react'
 import { useSession } from '../context/SessionContext'
+import { SESSION_ACTIONS } from '../context/SessionContext'
 import { useModelConfig } from './useModelConfig'
 import { voiceApi } from '../services/voiceApi'
+import { TTS_RESPONSE_TIMEOUT_MS } from '../constants'
 
 interface UseAudioPlayerOptions {
+  /** Optional callback invoked when TTS fails, so the caller can show an error toast. */
   onTtsError?: (message: string) => void
 }
 
+/**
+ * Plays the AI persona's voice responses through the Web Audio API.
+ *
+ * Call `play(text, voice)` to fetch TTS audio from the backend and start
+ * playback. Call `stop()` to cut playback immediately (e.g. when the user
+ * interrupts the AI). Volume and mute state are kept in sync between React
+ * state (for rendering) and refs (so audio callbacks always read the latest
+ * values without stale closures).
+ *
+ * Dispatches `FIRST_AUDIO_CHUNK` to the session when audio is ready to play
+ * and `AUDIO_COMPLETE` when it finishes naturally. If the user calls `stop()`,
+ * neither event fires — the caller is responsible for dispatching `SKIP_AI`.
+ *
+ * @example
+ * const { play, stop, volume, isMuted, mute, unmute, setVolume } = useAudioPlayer({
+ *   onTtsError: (msg) => setToast(msg),
+ * })
+ * await play('Hello, how can I help you today?', 'alloy')
+ */
 export function useAudioPlayer({ onTtsError }: UseAudioPlayerOptions = {}) {
   const { dispatch } = useSession()
   const { ttsModel } = useModelConfig()
@@ -57,8 +79,7 @@ export function useAudioPlayer({ onTtsError }: UseAudioPlayerOptions = {}) {
     const abortController = new AbortController()
     abortRef.current = abortController
 
-    // 10s TTS timeout (FP-I05)
-    const timeoutId = setTimeout(() => abortController.abort(), 10_000)
+    const timeoutId = setTimeout(() => abortController.abort(), TTS_RESPONSE_TIMEOUT_MS)
 
     try {
       const response = await voiceApi.speak(text, voice, abortController.signal, ttsModelRef.current)
@@ -69,7 +90,7 @@ export function useAudioPlayer({ onTtsError }: UseAudioPlayerOptions = {}) {
       if (!response.ok) {
         const msg = 'Audio unavailable for this response'
         onTtsError?.(msg)
-        dispatch({ type: 'ERROR', message: msg })
+        dispatch({ type: SESSION_ACTIONS.ERROR, message: msg })
         return
       }
 
@@ -87,14 +108,14 @@ export function useAudioPlayer({ onTtsError }: UseAudioPlayerOptions = {}) {
         console.error('Audio decode error:', decodeErr)
         const msg = 'Audio playback failed for this response'
         onTtsError?.(msg)
-        dispatch({ type: 'ERROR', message: msg })
+        dispatch({ type: SESSION_ACTIONS.ERROR, message: msg })
         return
       }
 
       if (abortController.signal.aborted) return
 
       // Transition to speaking state once we have decoded audio ready
-      dispatch({ type: 'FIRST_AUDIO_CHUNK' })
+      dispatch({ type: SESSION_ACTIONS.FIRST_AUDIO_CHUNK })
 
       const source = ctx.createBufferSource()
       source.buffer = audioBuffer
@@ -107,7 +128,7 @@ export function useAudioPlayer({ onTtsError }: UseAudioPlayerOptions = {}) {
         // and we skip dispatching — the caller handles SKIP_AI instead.
         if (sourceRef.current === source) {
           sourceRef.current = null
-          dispatch({ type: 'AUDIO_COMPLETE' })
+          dispatch({ type: SESSION_ACTIONS.AUDIO_COMPLETE })
         }
       }
 
@@ -118,7 +139,7 @@ export function useAudioPlayer({ onTtsError }: UseAudioPlayerOptions = {}) {
       console.error('TTS playback error:', error)
       const msg = 'Audio unavailable for this response'
       onTtsError?.(msg)
-      dispatch({ type: 'ERROR', message: msg })
+      dispatch({ type: SESSION_ACTIONS.ERROR, message: msg })
     } finally {
       // Only clear the ref if no newer call has replaced it
       if (abortRef.current === abortController) {

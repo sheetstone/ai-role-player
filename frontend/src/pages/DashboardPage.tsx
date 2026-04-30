@@ -1,17 +1,28 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { adminApi } from '../services/adminApi'
-import { useSession } from '../context/SessionContext'
+import { useSession, SESSION_ACTIONS } from '../context/SessionContext'
 import ScenarioSelector from '../components/dashboard/ScenarioSelector'
 import PersonaSelector from '../components/dashboard/PersonaSelector'
 import DifficultySelector from '../components/dashboard/DifficultySelector'
 import SessionSummaryCard from '../components/dashboard/SessionSummaryCard'
 import OnboardingOverlay from '../components/dashboard/OnboardingOverlay'
 import type { Scenario, Persona, Session } from '../types'
+import { LS_ONBOARDING } from '../constants'
 import styles from './DashboardPage.module.css'
 
-const ONBOARDING_KEY = 'ai-role-player:onboarding-seen'
-
+/**
+ * The landing page where learners configure and launch a role-play session.
+ *
+ * On mount, fetches the latest scenarios and personas from the backend so any
+ * admin changes are immediately visible without a page reload.
+ *
+ * Flow:
+ * 1. User selects a scenario, compatible persona, and difficulty level
+ * 2. The "Start Role Play" button becomes active when both are selected
+ * 3. First-time users see an `OnboardingOverlay` with usage tips
+ * 4. On confirm, dispatches `START_SESSION` to the context and navigates to `/session`
+ */
 export default function DashboardPage() {
   const navigate = useNavigate()
   const { dispatch } = useSession()
@@ -48,7 +59,7 @@ export default function DashboardPage() {
 
   const handleStart = () => {
     if (!canStart) return
-    const seen = localStorage.getItem(ONBOARDING_KEY)
+    const seen = localStorage.getItem(LS_ONBOARDING)
     if (!seen) {
       setPendingStart(true)
       setShowOnboarding(true)
@@ -58,7 +69,7 @@ export default function DashboardPage() {
   }
 
   const handleOnboardingDismiss = () => {
-    localStorage.setItem(ONBOARDING_KEY, '1')
+    localStorage.setItem(LS_ONBOARDING, '1')
     setShowOnboarding(false)
     if (pendingStart) {
       setPendingStart(false)
@@ -68,7 +79,7 @@ export default function DashboardPage() {
 
   const launchSession = () => {
     dispatch({
-      type: 'START_SESSION',
+      type: SESSION_ACTIONS.START_SESSION,
       scenario: selectedScenario!,
       persona: selectedPersona!,
       difficulty,

@@ -1,17 +1,36 @@
 import styles from './MicPermissionGuide.module.css'
 
 interface MicPermissionGuideProps {
+  /** Called when the user clicks "Try again" — re-triggers the mic permission prompt. */
   onRetry: () => void
 }
+
+/**
+ * Shown when the user has blocked microphone access. Displays step-by-step
+ * instructions for re-enabling the mic in the user's current browser.
+ *
+ * Browser detection uses the modern `navigator.userAgentData` API (Chromium)
+ * with a user-agent string fallback for Firefox and Safari. This avoids the
+ * fragile regex patterns needed to parse UA strings for Chromium-based browsers.
+ */
 
 type BrowserKey = 'chrome' | 'firefox' | 'safari' | 'other'
 
 function detectBrowser(): BrowserKey {
+  // Prefer the modern User-Agent Client Hints API (Chromium-based browsers)
+  // to avoid fragile UA string parsing. Firefox and Safari fall through to
+  // the UA fallback, which is reliable enough for those two browsers.
+  if ('userAgentData' in navigator) {
+    const data = (navigator as any).userAgentData
+    const brands: Array<{ brand: string }> = data.brands ?? []
+    if (brands.some((b) => /firefox/i.test(b.brand))) return 'firefox'
+    if (brands.some((b) => /safari/i.test(b.brand))) return 'safari'
+    return 'chrome'
+  }
   const ua = navigator.userAgent
-  if (/Chrome/.test(ua) && !/Edg|OPR/.test(ua)) return 'chrome'
   if (/Firefox/.test(ua)) return 'firefox'
   if (/Safari/.test(ua) && !/Chrome/.test(ua)) return 'safari'
-  return 'other'
+  return 'chrome'
 }
 
 const STEPS: Record<BrowserKey, string[]> = {
@@ -46,7 +65,6 @@ const BROWSER_LABEL: Record<BrowserKey, string> = {
 
 export default function MicPermissionGuide({ onRetry }: MicPermissionGuideProps) {
   const browser = detectBrowser()
-  const steps = STEPS[browser]
 
   return (
     <div className={styles.guide} role="alert" aria-live="assertive">
@@ -70,7 +88,7 @@ export default function MicPermissionGuide({ onRetry }: MicPermissionGuideProps)
       <div className={styles.stepsWrap}>
         <p className={styles.stepsLabel}>To fix this:</p>
         <ol className={styles.steps}>
-          {steps.map((step, i) => (
+          {STEPS[browser].map((step, i) => (
             <li key={i}>{step}</li>
           ))}
         </ol>

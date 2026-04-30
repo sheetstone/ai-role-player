@@ -2,9 +2,21 @@ import type { Scenario, Persona } from '../../types'
 import styles from './Dashboard.module.css'
 
 interface Props {
+  /** The chosen scenario. If null, a placeholder prompt is shown. */
   scenario: Scenario | null
+  /** The chosen persona. If null, a placeholder prompt is shown. */
   persona: Persona | null
 }
+
+/**
+ * Preview card shown on the dashboard after a scenario and persona are selected.
+ * Displays three sections:
+ * 1. **Scenario Goals** — what the learner is trying to achieve
+ * 2. **Persona** — the AI character's name, behavior notes, and trait chips
+ * 3. **Suggested Skill Focus** — what skill the scenario is designed to practice
+ *
+ * Uses `aria-live="polite"` so screen readers announce when the selection changes.
+ */
 
 export default function SessionSummaryCard({ scenario, persona }: Props) {
   if (!scenario || !persona) {

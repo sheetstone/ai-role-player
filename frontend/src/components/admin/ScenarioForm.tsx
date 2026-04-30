@@ -5,11 +5,28 @@ import styles from './ScenarioForm.module.css'
 type FormData = Omit<Scenario, 'id' | 'createdAt' | 'updatedAt'>
 
 interface Props {
+  /** Pre-fill the form with this scenario's data when editing an existing one. Omit for "New Scenario". */
   initial?: Scenario
+  /** List of all personas — shown as checkboxes so the admin can mark which ones are compatible. */
   personas: Persona[]
+  /** Called with the validated form data when the user clicks Save. The parent handles the API call. */
   onSave: (data: FormData) => Promise<void>
+  /** Called when the user clicks Cancel without saving. */
   onCancel: () => void
 }
+
+/**
+ * Form for creating or editing a training scenario in the Admin Console.
+ *
+ * Key fields:
+ * - **Goals** — one per line in a textarea, split into an array on submit
+ * - **Compatible Personas** — checkbox list; limits which personas learners can pair with this scenario
+ * - **Scoring Weights** — category + percentage pairs that must sum to exactly 100
+ * - **Voice Behavior** — interrupt frequency, speaking pace, tone style used when generating AI prompts
+ *
+ * Validates that scoring weights sum to 100 before calling `onSave`. Shows an
+ * inline error if they don't.
+ */
 
 function defaultForm(): FormData {
   return {

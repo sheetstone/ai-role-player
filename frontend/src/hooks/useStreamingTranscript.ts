@@ -1,8 +1,27 @@
 import { useCallback, useRef } from 'react'
 import { useSession } from '../context/SessionContext'
+import { SESSION_ACTIONS } from '../context/SessionContext'
 import { useModelConfig } from './useModelConfig'
 import { voiceApi } from '../services/voiceApi'
+import { LLM_FIRST_TOKEN_TIMEOUT_MS } from '../constants'
 
+/**
+ * Sends the user's speech text to the LLM and streams the AI persona's reply
+ * back word by word into the transcript.
+ *
+ * Internally it opens a Server-Sent Events (SSE) connection to `/api/chat`.
+ * As each token arrives it dispatches `UPDATE_TURN` so the transcript panel
+ * shows the text being typed in real time. When the stream ends it returns the
+ * full text to the caller, which then passes it to `useAudioPlayer.play()`.
+ *
+ * Cancels any in-flight stream before starting a new one, and aborts after
+ * 8 seconds if the first token hasn't arrived (timeout defined in constants).
+ *
+ * @example
+ * const { streamTurn } = useStreamingTranscript()
+ * const fullText = await streamTurn("I'd like to know more about your pricing")
+ * if (fullText) await play(fullText, session.persona.voice)
+ */
 export function useStreamingTranscript() {
   const { session, dispatch } = useSession()
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -22,16 +41,15 @@ export function useStreamingTranscript() {
     const abortController = new AbortController()
     abortControllerRef.current = abortController
 
-    // 8s timeout for first LLM token (FP-I05)
     const timeoutId = setTimeout(() => {
       abortController.abort()
-    }, 8_000)
+    }, LLM_FIRST_TOKEN_TIMEOUT_MS)
 
     const personaTurnId = crypto.randomUUID()
 
     try {
       dispatch({
-        type: 'ADD_TURN',
+        type: SESSION_ACTIONS.ADD_TURN,
         turn: {
           id: personaTurnId,
           speaker: 'persona',
@@ -74,16 +92,16 @@ export function useStreamingTranscript() {
 
         if (data.type === 'delta') {
           fullText += data.text
-          dispatch({ type: 'UPDATE_TURN', id: personaTurnId, text: fullText, partial: true })
+          dispatch({ type: SESSION_ACTIONS.UPDATE_TURN, id: personaTurnId, text: fullText, partial: true })
         } else if (data.type === 'done') {
           console.log('[SSE done] fullText:', JSON.stringify(data.fullText))
           // FP-F03: empty response guard
           if (!data.fullText.trim()) {
-            dispatch({ type: 'UPDATE_TURN', id: personaTurnId, text: '[No response]', partial: false })
-            dispatch({ type: 'ERROR', message: 'Empty response received' })
+            dispatch({ type: SESSION_ACTIONS.UPDATE_TURN, id: personaTurnId, text: '[No response]', partial: false })
+            dispatch({ type: SESSION_ACTIONS.ERROR, message: 'Empty response received' })
             return 'empty' as const
           }
-          dispatch({ type: 'UPDATE_TURN', id: personaTurnId, text: data.fullText, partial: false })
+          dispatch({ type: SESSION_ACTIONS.UPDATE_TURN, id: personaTurnId, text: data.fullText, partial: false })
           return data.fullText
         } else if (data.type === 'error') {
           throw new Error(data.message)
@@ -122,11 +140,11 @@ export function useStreamingTranscript() {
     } catch (error: any) {
       clearTimeout(timeoutId)
       if (error.name === 'AbortError') {
-        dispatch({ type: 'ERROR', message: 'AI response timed out. Please try again.' })
+        dispatch({ type: SESSION_ACTIONS.ERROR, message: 'AI response timed out. Please try again.' })
         return null
       }
       console.error('Streaming error:', error)
-      dispatch({ type: 'ERROR', message: error.message || 'AI response failed' })
+      dispatch({ type: SESSION_ACTIONS.ERROR, message: error.message || 'AI response failed' })
       return null
     } finally {
       abortControllerRef.current = null

@@ -1,192 +1,40 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { useSession } from '../context/SessionContext'
-import { useModelConfig } from '../hooks/useModelConfig'
-import { useVoiceRecorder } from '../hooks/useVoiceRecorder'
-import { useEarcons } from '../hooks/useEarcons'
-import { useStreamingTranscript } from '../hooks/useStreamingTranscript'
-import { useAudioPlayer } from '../hooks/useAudioPlayer'
-import { voiceApi } from '../services/voiceApi'
-import VoicePanel from '../components/session/VoicePanel'
-import MicPermissionGuide from '../components/session/MicPermissionGuide'
+/**
+ * The in-session role-play screen. This is a thin routing shell — all the
+ * logic lives in `useSessionOrchestrator`. This component is responsible only
+ * for reading the orchestrator's return values and passing them to the right
+ * child components.
+ *
+ * Layout (top to bottom):
+ * 1. Header — scenario + persona name, nav links
+ * 2. SessionStateIndicator — the current state pill (Listening / Processing / Speaking …)
+ * 3. SessionControls — Pause / Resume / End / Restart toolbar
+ * 4. TranscriptPanel — real-time conversation log
+ * 5. SessionPlaybackPane — mute/volume/skip (only visible when AI is speaking)
+ * 6. SessionRecordingPane — mic button or MicPermissionGuide
+ * 7. ErrorToast — dismissible error notification
+ */
+import { Link } from 'react-router-dom'
+import { useSessionOrchestrator } from './session/useSessionOrchestrator'
 import SessionStateIndicator from '../components/session/SessionStateIndicator'
-import PlaybackControls from '../components/session/PlaybackControls'
-import TranscriptPanel from '../components/session/TranscriptPanel'
-import SttFallbackInput from '../components/session/SttFallbackInput'
 import SessionControls from '../components/session/SessionControls'
+import TranscriptPanel from '../components/session/TranscriptPanel'
 import ErrorToast from '../components/session/ErrorToast'
+import SessionRecordingPane from './session/SessionRecordingPane'
+import SessionPlaybackPane from './session/SessionPlaybackPane'
 import styles from './SessionPage.module.css'
 
-interface ErrorToastState {
-  message: string
-  onRetry?: () => void
-}
-
 export default function SessionPage() {
-  const navigate = useNavigate()
-  const { session, state, error, dispatch } = useSession()
-  const [sttErrorCount, setSttErrorCount] = useState(0)
-  const [showFallback, setShowFallback] = useState(false)
-  const [errorToast, setErrorToast] = useState<ErrorToastState | null>(null)
-
-  const { llmModel } = useModelConfig()
-  const llmModelRef = useRef(llmModel)
-  llmModelRef.current = llmModel
-
-  const { streamTurn } = useStreamingTranscript()
-  const { play, stop, setVolume, mute, unmute, volume, isMuted } = useAudioPlayer({
-    onTtsError: (msg) => setErrorToast({ message: msg }),
-  })
-
-  useEarcons(state, isMuted)
-
-  // Stable ref so the AI-turn effect always calls the latest closures
-  const runTurnRef = useRef<(userText: string) => Promise<void>>(async () => {})
-  runTurnRef.current = async (userText: string) => {
-    if (!session) return
-    const fullText = await streamTurn(userText)
-    if (fullText) {
-      await play(fullText, session.persona.voice)
-    }
-  }
-
-  // Trigger AI turn whenever a completed user turn lands in processing state
-  useEffect(() => {
-    if (!session || state !== 'processing') return
-    const lastTurn = session.turns[session.turns.length - 1]
-    if (lastTurn && lastTurn.speaker === 'user' && !lastTurn.partial) {
-      runTurnRef.current(lastTurn.text)
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.turns.length, state])
-
-  // Bubble context errors (STT/LLM) into the unified error toast.
-  // Retry re-triggers the AI turn by advancing state back to processing.
-  useEffect(() => {
-    if (!error) return
-    const lastUserTurn = session?.turns.slice().reverse().find((t) => t.speaker === 'user')
-    setErrorToast({
-      message: error,
-      onRetry: lastUserTurn
-        ? () => dispatch({ type: 'STOP_RECORDING' })
-        : undefined,
-    })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [error])
-
-  // ── Voice recording ──────────────────────────────────────────────────────
-
-  const handleTranscribe = useCallback(async (blob: Blob) => {
-    try {
-      const { text } = await voiceApi.transcribe(blob, llmModelRef.current)
-      if (!text?.trim()) throw new Error('Empty transcription')
-
-      setSttErrorCount(0)
-      dispatch({
-        type: 'ADD_TURN',
-        turn: {
-          id: crypto.randomUUID(),
-          speaker: 'user',
-          text,
-          timestamp: Date.now(),
-          partial: false,
-        },
-      })
-    } catch (err) {
-      console.error('[SessionPage] Transcribe error:', err)
-      const nextCount = sttErrorCount + 1
-      setSttErrorCount(nextCount)
-      if (nextCount >= 2) setShowFallback(true)
-      dispatch({ type: 'ERROR', message: 'Transcription failed. Please try again or type your message.' })
-    }
-  }, [sttErrorCount, dispatch])
-
-  const handleManualSubmit = (text: string) => {
-    setShowFallback(false)
-    setSttErrorCount(0)
-    dispatch({ type: 'STOP_RECORDING' })
-    dispatch({
-      type: 'ADD_TURN',
-      turn: {
-        id: crypto.randomUUID(),
-        speaker: 'user',
-        text,
-        timestamp: Date.now(),
-        partial: false,
-      },
-    })
-  }
-
   const {
-    permissionState,
-    requestPermission,
-    isRecording,
-    recordingSeconds,
-    mode,
-    setMode,
-    pttStart,
-    pttEnd,
-    toggleRecord,
-    cancel,
-    analyserNode,
-    toastMessage,
-  } = useVoiceRecorder({
-    onBlob: (blob) => {
-      dispatch({ type: 'STOP_RECORDING' })
-      handleTranscribe(blob)
-    },
-  })
-
-  // ── Session control handlers ─────────────────────────────────────────────
-
-  const handlePause = useCallback(() => {
-    cancel()
-    stop()
-    dispatch({ type: 'PAUSE_SESSION' })
-  }, [cancel, stop, dispatch])
-
-  const handleResume = useCallback(() => {
-    dispatch({ type: 'RESUME_SESSION' })
-  }, [dispatch])
-
-  const handleEnd = useCallback(() => {
-    stop()
-    cancel()
-    dispatch({ type: 'END_SESSION' })
-    navigate('/feedback')
-  }, [stop, cancel, dispatch, navigate])
-
-  const handleRestart = useCallback(() => {
-    if (!session) return
-    stop()
-    cancel()
-    const { scenario, persona, difficulty } = session
-    dispatch({ type: 'RESET' })
-    dispatch({ type: 'START_SESSION', scenario, persona, difficulty })
-  }, [session, stop, cancel, dispatch])
-
-  // ── Interruption handlers ────────────────────────────────────────────────
-
-  const handlePttStart = useCallback(() => {
-    if (state === 'speaking') {
-      stop()
-      dispatch({ type: 'SKIP_AI' })
-    }
-    pttStart()
-  }, [state, stop, dispatch, pttStart])
-
-  const handleToggleRecord = useCallback(() => {
-    if (state === 'speaking') {
-      stop()
-      dispatch({ type: 'SKIP_AI' })
-      return
-    }
-    toggleRecord()
-  }, [state, stop, dispatch, toggleRecord])
-
-  useEffect(() => {
-    if (permissionState === 'unknown') requestPermission()
-  }, [permissionState, requestPermission])
+    session, state,
+    permissionState, requestPermission,
+    isRecording, recordingSeconds, mode, setMode,
+    pttStart, pttEnd, toggleRecord, cancel,
+    analyserNode, toastMessage,
+    showFallback, handleManualSubmit, hideFallback,
+    volume, isMuted, mute, unmute, setVolume, handleSkipAI,
+    handlePause, handleResume, handleEnd, handleRestart,
+    errorToast, clearErrorToast,
+  } = useSessionOrchestrator()
 
   if (!session) {
     return (
@@ -197,14 +45,6 @@ export default function SessionPage() {
       </main>
     )
   }
-
-  const activeTurnId = state === 'speaking'
-    ? session.turns.slice().reverse().find((t) => t.speaker === 'persona' && !t.partial)?.id ?? null
-    : null
-
-  // Voice panel is active during speaking so the user can interrupt.
-  // Disabled while processing (waiting for AI), ended, or paused.
-  const voiceDisabled = state === 'processing' || state === 'ended' || state === 'paused'
 
   return (
     <main className={styles.page}>
@@ -223,68 +63,48 @@ export default function SessionPage() {
       <SessionStateIndicator />
 
       <SessionControls
-        state={state}
         onPause={handlePause}
         onResume={handleResume}
         onEnd={handleEnd}
         onRestart={handleRestart}
       />
 
-      <TranscriptPanel
-        turns={session.turns}
-        sessionStartedAt={session.startedAt}
-        activeTurnId={activeTurnId}
-      />
+      <TranscriptPanel />
 
       {state === 'speaking' && (
-        <PlaybackControls
+        <SessionPlaybackPane
           volume={volume}
           isMuted={isMuted}
           onMute={mute}
           onUnmute={unmute}
           onVolumeChange={setVolume}
-          onSkip={() => {
-            stop()
-            dispatch({ type: 'SKIP_AI' })
-          }}
+          onSkip={handleSkipAI}
         />
       )}
 
-      {permissionState === 'denied' ? (
-        <MicPermissionGuide onRetry={requestPermission} />
-      ) : permissionState === 'granted' ? (
-        <>
-          <VoicePanel
-            isRecording={isRecording}
-            recordingSeconds={recordingSeconds}
-            mode={mode}
-            onModeChange={setMode}
-            analyserNode={analyserNode}
-            toastMessage={toastMessage}
-            onPttStart={handlePttStart}
-            onPttEnd={pttEnd}
-            onToggleRecord={handleToggleRecord}
-            onCancel={cancel}
-            disabled={voiceDisabled}
-          />
-          {showFallback && (
-            <SttFallbackInput
-              onSubmit={handleManualSubmit}
-              onCancel={() => setShowFallback(false)}
-            />
-          )}
-        </>
-      ) : (
-        <p className={styles.requesting} role="status" aria-busy="true">
-          Requesting microphone access…
-        </p>
-      )}
+      <SessionRecordingPane
+        permissionState={permissionState}
+        requestPermission={requestPermission}
+        isRecording={isRecording}
+        recordingSeconds={recordingSeconds}
+        mode={mode}
+        onModeChange={setMode}
+        analyserNode={analyserNode}
+        toastMessage={toastMessage}
+        onPttStart={pttStart}
+        onPttEnd={pttEnd}
+        onToggleRecord={toggleRecord}
+        onCancel={cancel}
+        showFallback={showFallback}
+        onManualSubmit={handleManualSubmit}
+        onHideFallback={hideFallback}
+      />
 
       {errorToast && (
         <ErrorToast
           message={errorToast.message}
           onRetry={errorToast.onRetry}
-          onDismiss={() => setErrorToast(null)}
+          onDismiss={clearErrorToast}
         />
       )}
     </main>

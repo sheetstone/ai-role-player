@@ -2,8 +2,16 @@ import type { FeedbackResult } from '../../types'
 import styles from './FeedbackSummary.module.css'
 
 interface FeedbackSummaryProps {
+  /** The AI-generated feedback returned by the backend after a session ends. */
   feedback: FeedbackResult
 }
+
+/**
+ * Displays the AI-generated feedback for the completed session in three sections:
+ * 1. **Overall Assessment** — a paragraph summary of the learner's performance
+ * 2. **Strengths / Areas to Improve** — two side-by-side bullet lists
+ * 3. **Coaching Tips** — numbered action items the learner can apply next time
+ */
 
 export default function FeedbackSummary({ feedback }: FeedbackSummaryProps) {
   return (

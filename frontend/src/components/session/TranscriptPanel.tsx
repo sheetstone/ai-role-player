@@ -1,51 +1,46 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import type { Turn } from '../../types'
+import { useSession } from '../../context/SessionContext'
+import { TRANSCRIPT_SCROLL_PIN_THRESHOLD_PX } from '../../constants'
+import TurnItem from './TurnItem'
 import styles from './TranscriptPanel.module.css'
 
-interface TranscriptPanelProps {
-  turns: Turn[]
-  sessionStartedAt: number
-  activeTurnId: string | null  // FP-H02: persona turn currently being spoken
-}
+/**
+ * Scrollable conversation log shown during a session. New turns appear at the
+ * bottom and the panel auto-scrolls to follow them.
+ *
+ * Reads `session.turns`, `session.startedAt`, and `state` directly from
+ * `SessionContext` — no props needed, following the same pattern as
+ * `SessionStateIndicator`.
+ *
+ * If the user scrolls up to review earlier turns, auto-scroll pauses and a
+ * "Jump to latest" button appears. Scrolling back to the bottom (within
+ * `TRANSCRIPT_SCROLL_PIN_THRESHOLD_PX` pixels) re-enables auto-scroll.
+ */
 
-function formatTimestamp(turnTs: number, sessionStart: number): string {
-  const elapsed = Math.max(0, Math.floor((turnTs - sessionStart) / 1000))
-  const h = Math.floor(elapsed / 3600)
-  const m = Math.floor((elapsed % 3600) / 60)
-  const s = elapsed % 60
-  return [h, m, s].map((n) => n.toString().padStart(2, '0')).join(':')
-}
-
-export default function TranscriptPanel({
-  turns,
-  sessionStartedAt,
-  activeTurnId,
-}: TranscriptPanelProps) {
+export default function TranscriptPanel() {
+  const { session, state } = useSession()
+  const turns = session?.turns ?? []
+  const sessionStartedAt = session?.startedAt ?? 0
+  const activeTurnId = state === 'speaking'
+    ? turns.slice().reverse().find((t) => t.speaker === 'persona' && !t.partial)?.id ?? null
+    : null
   const scrollRef = useRef<HTMLDivElement>(null)
-  // Track pinned state in a ref — no re-render needed on scroll
   const pinnedRef = useRef(true)
   const [showJump, setShowJump] = useState(false)
 
-  // FP-H01 + FP-H03: auto-scroll to bottom when new content arrives,
-  // but only if the user hasn't scrolled up.
   useEffect(() => {
     const el = scrollRef.current
-    if (el && pinnedRef.current) {
-      el.scrollTop = el.scrollHeight
-    }
+    if (el && pinnedRef.current) el.scrollTop = el.scrollHeight
   }, [turns])
 
-  // FP-H03: detect manual scroll, show / hide "Jump to latest"
   const handleScroll = useCallback(() => {
     const el = scrollRef.current
     if (!el) return
     const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
-    const pinned = distFromBottom <= 100
-    pinnedRef.current = pinned
-    setShowJump(!pinned)
+    pinnedRef.current = distFromBottom <= TRANSCRIPT_SCROLL_PIN_THRESHOLD_PX
+    setShowJump(!pinnedRef.current)
   }, [])
 
-  // FP-H03: jump button scrolls smoothly to bottom and re-pins
   const jumpToLatest = useCallback(() => {
     const el = scrollRef.current
     if (!el) return
@@ -81,51 +76,11 @@ export default function TranscriptPanel({
         )}
       </div>
 
-      {/* FP-H03: Jump to latest button */}
       {showJump && (
-        <button
-          className={styles.jumpBtn}
-          onClick={jumpToLatest}
-          aria-label="Jump to latest message"
-        >
+        <button className={styles.jumpBtn} onClick={jumpToLatest} aria-label="Jump to latest message">
           ↓ Jump to latest
         </button>
       )}
     </div>
-  )
-}
-
-// ── Individual turn ───────────────────────────────────────────────────────────
-
-interface TurnItemProps {
-  turn: Turn
-  sessionStartedAt: number
-  isActive: boolean
-}
-
-function TurnItem({ turn, sessionStartedAt, isActive }: TurnItemProps) {
-  const isUser = turn.speaker === 'user'
-
-  return (
-    <li
-      className={`${styles.turn} ${isUser ? styles.turnUser : styles.turnPersona} ${isActive ? styles.turnActive : ''}`}
-    >
-      <div className={styles.turnMeta}>
-        <span className={styles.speaker}>
-          {isUser ? 'You' : 'Persona'}
-        </span>
-        <time className={styles.timestamp}>
-          {formatTimestamp(turn.timestamp, sessionStartedAt)}
-        </time>
-      </div>
-
-      <div className={`${styles.bubble} ${isUser ? styles.bubbleUser : styles.bubblePersona} ${isActive ? styles.bubbleActive : ''}`}>
-        <span className={styles.text}>
-          {turn.text || (turn.partial ? '' : '—')}
-        </span>
-        {/* FP-H01: blinking cursor on partial (streaming) turns */}
-        {turn.partial && <span className={styles.cursor} aria-hidden="true" />}
-      </div>
-    </li>
   )
 }

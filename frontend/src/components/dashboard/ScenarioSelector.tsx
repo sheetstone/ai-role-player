@@ -1,13 +1,29 @@
 import { useState } from 'react'
 import type { Scenario } from '../../types'
+import { DASHBOARD_MAX_PILLS } from '../../constants'
 import styles from './Dashboard.module.css'
 
 interface Props {
+  /** All available scenarios fetched from the backend. */
   scenarios: Scenario[]
+  /** The currently selected scenario, or null if none chosen. */
   selected: Scenario | null
+  /** Called when the user picks a scenario. Pass `null` to clear the selection. */
   onSelect: (scenario: Scenario) => void
+  /** When true, shows a "Loading…" placeholder and disables the search input. */
   loading: boolean
 }
+
+/**
+ * Lets the user pick a training scenario.
+ *
+ * Shows up to `DASHBOARD_MAX_PILLS` scenarios as quick-select buttons by default.
+ * When the user starts typing in the search box, the pills are replaced with a
+ * filtered dropdown list. Selecting from either clears the search query.
+ *
+ * A "✕" chip appears below the search box when a scenario is selected,
+ * giving the user a clear way to deselect.
+ */
 
 export default function ScenarioSelector({ scenarios, selected, onSelect, loading }: Props) {
   const [query, setQuery] = useState('')
@@ -16,8 +32,7 @@ export default function ScenarioSelector({ scenarios, selected, onSelect, loadin
     s.name.toLowerCase().includes(query.toLowerCase())
   )
 
-  // Show up to 10 preloaded scenarios as pills
-  const preloaded = scenarios.slice(0, 10)
+  const preloaded = scenarios.slice(0, DASHBOARD_MAX_PILLS)
 
   return (
     <div className={styles.selectorGroup}>

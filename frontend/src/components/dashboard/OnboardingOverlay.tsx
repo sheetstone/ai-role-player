@@ -1,8 +1,21 @@
 import styles from './Dashboard.module.css'
 
 interface Props {
+  /** Called when the user clicks "Got it, let's go". Saves a flag to localStorage so the overlay doesn't show again. */
   onDismiss: () => void
 }
+
+/**
+ * A modal overlay shown the first time a user tries to start a session.
+ * Lists the key tips they need to know before jumping into a voice session
+ * (push-to-talk, toggle mode, interrupting the AI, ending a session).
+ *
+ * After the user dismisses it, `DashboardPage` saves a flag to localStorage
+ * so this overlay never appears again on the same device.
+ *
+ * `autoFocus` is set on the dismiss button so keyboard users can press Enter
+ * immediately to proceed.
+ */
 
 export default function OnboardingOverlay({ onDismiss }: Props) {
   return (

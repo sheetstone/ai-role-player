@@ -1,27 +1,44 @@
 import { useEffect, useCallback } from 'react'
 import type { RecordMode } from '../../hooks/useVoiceRecorder'
 import WaveformCanvas from './WaveformCanvas'
+import { formatDuration } from '../../utils'
 import styles from './VoicePanel.module.css'
 
 interface VoicePanelProps {
+  /** True while audio is being captured. Controls button appearance and cancel button visibility. */
   isRecording: boolean
+  /** Elapsed recording seconds. Displayed as a MM:SS timer while recording. */
   recordingSeconds: number
+  /** Current recording mode — determines whether pointer events trigger PTT or toggle behavior. */
   mode: RecordMode
+  /** Called when the user switches between Hold (ptt) and Tap (toggle) mode. */
   onModeChange: (m: RecordMode) => void
+  /** AnalyserNode from Web Audio API — animates the live waveform while recording. */
   analyserNode: AnalyserNode | null
+  /** Short message to show in the toast area (e.g. "Hold to record"). Null = no toast. */
   toastMessage: string | null
+  /** Mouse/touch down handler for push-to-talk mode. */
   onPttStart: () => void
+  /** Mouse/touch up handler for push-to-talk mode. */
   onPttEnd: () => void
+  /** Click handler for toggle mode. */
   onToggleRecord: () => void
+  /** Discard the current recording. Also triggered by the Escape key. */
   onCancel: () => void
+  /** When true, the mic button is disabled (e.g. during AI processing). */
   disabled?: boolean
 }
 
-function formatTime(s: number): string {
-  const m = Math.floor(s / 60).toString().padStart(2, '0')
-  const sec = (s % 60).toString().padStart(2, '0')
-  return `${m}:${sec}`
-}
+/**
+ * The primary recording UI — the mic button, live waveform, recording timer,
+ * mode toggle (Hold/Tap), and toast messages.
+ *
+ * Handles both recording modes internally:
+ * - **Hold (ptt)**: `onPointerDown` → `onPttStart`, `onPointerUp` → `onPttEnd`
+ * - **Tap (toggle)**: `onClick` → `onToggleRecord`
+ *
+ * The Escape key cancels an in-progress recording regardless of mode.
+ */
 
 function MicIcon() {
   return (
@@ -119,10 +136,10 @@ export default function VoicePanel({
         <div
           className={styles.timer}
           aria-live="off"
-          aria-label={`Recording: ${formatTime(recordingSeconds)} of 00:30`}
+          aria-label={`Recording: ${formatDuration(recordingSeconds)} of 00:30`}
         >
           <span className={styles.timerDot} aria-hidden="true" />
-          <span className={styles.timerTime}>{formatTime(recordingSeconds)}</span>
+          <span className={styles.timerTime}>{formatDuration(recordingSeconds)}</span>
           <span className={styles.timerMax}> / 00:30</span>
         </div>
       )}

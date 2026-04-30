@@ -4,19 +4,27 @@ import { useSession } from '../context/SessionContext'
 import { useModelConfig } from '../hooks/useModelConfig'
 import { voiceApi } from '../services/voiceApi'
 import type { FeedbackResult } from '../types'
+import { formatElapsed } from '../utils'
 import FeedbackSummary from '../components/feedback/FeedbackSummary'
 import KeyMomentCard from '../components/feedback/KeyMomentCard'
 import TranscriptViewer from '../components/feedback/TranscriptViewer'
 import ExportControls from '../components/feedback/ExportControls'
 import styles from './FeedbackPage.module.css'
 
-function formatDuration(ms: number): string {
-  const s = Math.floor(Math.abs(ms) / 1000)
-  const m = Math.floor(s / 60)
-  const rem = s % 60
-  return `${m}:${rem.toString().padStart(2, '0')}`
-}
-
+/**
+ * Post-session review page. Shown after the learner ends a session.
+ *
+ * On mount, calls the backend to generate AI feedback from the transcript.
+ * While that loads, a spinner is shown. If the API fails, the transcript is
+ * still shown so the learner can review what was said.
+ *
+ * Layout (top to bottom):
+ * 1. Metadata bar — scenario, persona, duration, turn count
+ * 2. Export controls — copy / download .txt / download .json
+ * 3. AI feedback summary — strengths, areas to improve, coaching tips
+ * 4. Key moments — highlighted turns from the session
+ * 5. Full transcript viewer
+ */
 export default function FeedbackPage() {
   const { session } = useSession()
   const { llmModel } = useModelConfig()
@@ -55,7 +63,7 @@ export default function FeedbackPage() {
     )
   }
 
-  const duration = formatDuration(
+  const duration = formatElapsed(
     session.endedAt ? session.endedAt - session.startedAt : Date.now() - session.startedAt
   )
 

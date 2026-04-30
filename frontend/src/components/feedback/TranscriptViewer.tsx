@@ -1,21 +1,26 @@
 import type { Turn, KeyMoment } from '../../types'
+import { formatElapsed } from '../../utils'
 import styles from './TranscriptViewer.module.css'
 
 interface TranscriptViewerProps {
+  /** All completed (non-partial) turns from the session. */
   turns: Turn[]
+  /** Unix timestamp (ms) when the session started — used to compute relative elapsed times. */
   sessionStartedAt: number
+  /** Key moments from the AI feedback. Turns that match a key moment get a colored highlight and inline badge. */
   keyMoments: KeyMoment[]
 }
 
-function formatElapsed(ms: number): string {
-  const s = Math.floor(ms / 1000)
-  const h = Math.floor(s / 3600)
-  const m = Math.floor((s % 3600) / 60)
-  const sec = s % 60
-  return h > 0
-    ? `${h}:${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`
-    : `${m}:${sec.toString().padStart(2, '0')}`
-}
+/**
+ * Read-only transcript shown on the feedback page. Unlike `TranscriptPanel`
+ * (which streams live during the session), this renders all completed turns
+ * at once without auto-scroll.
+ *
+ * Turns that are linked to a key moment are highlighted: green for "good
+ * practice" and amber for "needs improvement", with an inline badge showing
+ * the moment's label so the learner can see exactly which part of their speech
+ * the feedback refers to.
+ */
 
 export default function TranscriptViewer({ turns, sessionStartedAt, keyMoments }: TranscriptViewerProps) {
   const momentMap = new Map(keyMoments.map(m => [m.turnId, m]))

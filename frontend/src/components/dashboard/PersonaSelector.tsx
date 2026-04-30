@@ -3,11 +3,27 @@ import type { Persona, Scenario } from '../../types'
 import styles from './Dashboard.module.css'
 
 interface Props {
+  /** All available personas fetched from the backend. */
   personas: Persona[]
+  /** The currently selected scenario — used to filter personas to only compatible ones. */
   selectedScenario: Scenario | null
+  /** The currently selected persona, or null if none chosen. */
   selected: Persona | null
+  /** Called when the user picks a persona. Pass `null` to clear the selection. */
   onSelect: (persona: Persona) => void
 }
+
+/**
+ * Lets the user pick an AI persona to practice with.
+ *
+ * Behaves the same as `ScenarioSelector` (pills → search dropdown) with one
+ * additional rule: the persona list is filtered to only those compatible with
+ * the selected scenario. If no scenario is selected, all personas are shown
+ * and the input shows "Select a scenario first".
+ *
+ * Each dropdown item shows the persona's difficulty badge (easy/medium/hard)
+ * to help the user choose the right challenge level.
+ */
 
 export default function PersonaSelector({ personas, selectedScenario, selected, onSelect }: Props) {
   const [query, setQuery] = useState('')

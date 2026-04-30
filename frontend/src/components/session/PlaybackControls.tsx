@@ -1,13 +1,27 @@
 import styles from './PlaybackControls.module.css'
 
 interface PlaybackControlsProps {
+  /** Volume level from 0 (silent) to 1 (full). Displayed as a 0–100 percentage. */
   volume: number
+  /** When true, the mute icon is shown and the volume slider is disabled. */
   isMuted: boolean
+  /** Silence the AI voice without stopping the audio stream. */
   onMute: () => void
+  /** Restore audio to the previous volume level. */
   onUnmute: () => void
+  /** Set volume directly (0–1). Called as the user drags the slider. */
   onVolumeChange: (v: number) => void
+  /** Cut the current AI response short and return to the listening state. */
   onSkip: () => void
 }
+
+/**
+ * Toolbar for controlling AI voice playback — mute toggle, volume slider, and
+ * a skip button. Shown only while the session state is `'speaking'`.
+ *
+ * The volume slider is disabled when muted to prevent confusing state where the
+ * slider shows a value but nothing is audible.
+ */
 
 function IconMute() {
   return (

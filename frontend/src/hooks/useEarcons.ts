@@ -1,6 +1,28 @@
 import { useEffect, useRef, useCallback } from 'react'
 import type { SessionState } from '../types'
 
+/**
+ * Plays a short audio tone (earcon) whenever the session moves between certain
+ * states. Earcons give the user audio feedback so they know when it's their
+ * turn to speak — important in a voice-first app where they may not be looking
+ * at the screen.
+ *
+ * The four transitions with earcons are:
+ * - **idle → listening**: rising tone — "session started, speak now"
+ * - **listening → processing**: short click — "got it, processing"
+ * - **processing → speaking**: rising chirp — "AI is about to speak"
+ * - **speaking → listening**: falling tone — "AI done, your turn again"
+ *
+ * Uses the Web Audio API directly (no audio files needed). The AudioContext is
+ * lazily created on first use and closed on unmount to avoid leaking resources.
+ *
+ * @param state - The current session state from `useSession()`.
+ * @param muted - When true, no tones play (respects the playback mute toggle).
+ *
+ * @example
+ * // In useSessionOrchestrator, called after isMuted is available:
+ * useEarcons(state, isMuted)
+ */
 // Earcon spec — only the 4 transitions called out in FP-D03
 type Transition =
   | 'idle→listening'
