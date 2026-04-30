@@ -23,6 +23,16 @@ Thumbs.db
 *.swp
 *.swo
 
+# agent
+.claude/
+.gemini/
+
+# log
+log/
+
+# plan
+plan/
+
 # Project specific
 backend/node_modules/
 frontend/node_modules/
