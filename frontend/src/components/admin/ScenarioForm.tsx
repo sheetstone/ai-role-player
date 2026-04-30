@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Scenario, Persona } from '../../types'
+import { useArrayField } from '../../hooks/useArrayField'
 import styles from './ScenarioForm.module.css'
 
 type FormData = Omit<Scenario, 'id' | 'createdAt' | 'updatedAt'>
@@ -57,7 +58,7 @@ export default function ScenarioForm({ initial, personas, onSave, onCancel }: Pr
       voiceBehavior: initial.voiceBehavior,
     } : defaultForm()
   )
-  const [goalsText, setGoalsText] = useState(() => (initial?.goals ?? []).join('\n'))
+  const [goalsText, setGoalsText, parseGoals] = useArrayField(initial?.goals ?? [], '\n')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -82,8 +83,7 @@ export default function ScenarioForm({ initial, personas, onSave, onCancel }: Pr
     setSaving(true)
     setError(null)
     try {
-      const goals = goalsText.split('\n').map(g => g.trim()).filter(Boolean)
-      await onSave({ ...form, goals })
+      await onSave({ ...form, goals: parseGoals() })
     } catch (err: any) {
       setError(err.message || 'Save failed')
     } finally {

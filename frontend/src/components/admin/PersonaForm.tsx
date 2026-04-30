@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Persona } from '../../types'
 import { PERSONA_VOICES } from '../../constants'
+import { useArrayField } from '../../hooks/useArrayField'
 import styles from './PersonaForm.module.css'
 
 type FormData = Omit<Persona, 'id' | 'createdAt' | 'updatedAt'>
@@ -39,7 +40,7 @@ export default function PersonaForm({ initial, onSave, onCancel }: Props) {
       voice: initial.voice,
     } : defaultForm()
   )
-  const [traitsText, setTraitsText] = useState(() => (initial?.traits ?? []).join(', '))
+  const [traitsText, setTraitsText, parseTraits] = useArrayField(initial?.traits ?? [], ', ')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -51,8 +52,7 @@ export default function PersonaForm({ initial, onSave, onCancel }: Props) {
     setSaving(true)
     setError(null)
     try {
-      const traits = traitsText.split(',').map(t => t.trim()).filter(Boolean)
-      await onSave({ ...form, traits })
+      await onSave({ ...form, traits: parseTraits() })
     } catch (err: any) {
       setError(err.message || 'Save failed')
     } finally {
