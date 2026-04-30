@@ -8,6 +8,7 @@ import { useStreamingTranscript } from '../../hooks/useStreamingTranscript'
 import { useAudioPlayer } from '../../hooks/useAudioPlayer'
 import { voiceApi } from '../../services/voiceApi'
 import { STT_FAILURES_BEFORE_FALLBACK } from '../../constants'
+import { generateId } from '../../utils'
 
 interface ErrorToastState {
   /** Human-readable description of what went wrong. */
@@ -91,7 +92,7 @@ export function useSessionOrchestrator() {
       setSttErrorCount(0)
       dispatch({
         type: SESSION_ACTIONS.ADD_TURN,
-        turn: { id: crypto.randomUUID(), speaker: 'user', text, timestamp: Date.now(), partial: false },
+        turn: { id: generateId(), speaker: 'user', text, timestamp: Date.now(), partial: false },
       })
     } catch (err) {
       console.error('[session] Transcribe error:', err)
@@ -108,7 +109,7 @@ export function useSessionOrchestrator() {
     dispatch({ type: SESSION_ACTIONS.STOP_RECORDING })
     dispatch({
       type: SESSION_ACTIONS.ADD_TURN,
-      turn: { id: crypto.randomUUID(), speaker: 'user', text, timestamp: Date.now(), partial: false },
+      turn: { id: generateId(), speaker: 'user', text, timestamp: Date.now(), partial: false },
     })
   }, [dispatch])
 

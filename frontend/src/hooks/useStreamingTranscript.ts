@@ -4,6 +4,7 @@ import { SESSION_ACTIONS } from '../context/SessionContext'
 import { useModelConfig } from './useModelConfig'
 import { voiceApi } from '../services/voiceApi'
 import { LLM_FIRST_TOKEN_TIMEOUT_MS } from '../constants'
+import { generateId } from '../utils'
 
 /**
  * Sends the user's speech text to the LLM and streams the AI persona's reply
@@ -45,7 +46,7 @@ export function useStreamingTranscript() {
       abortController.abort()
     }, LLM_FIRST_TOKEN_TIMEOUT_MS)
 
-    const personaTurnId = crypto.randomUUID()
+    const personaTurnId = generateId()
 
     try {
       dispatch({

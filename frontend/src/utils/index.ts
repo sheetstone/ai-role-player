@@ -55,3 +55,22 @@ export function formatElapsed(ms: number): string {
 export function slugify(text: string, maxLength = 30): string {
   return text.toLowerCase().replace(/\s+/g, '-').slice(0, maxLength)
 }
+
+/**
+ * Generates a UUID v4. Uses `crypto.randomUUID()` when available (secure
+ * contexts / HTTPS), and falls back to a Math.random-based implementation for
+ * plain-HTTP environments where the Web Crypto API is restricted.
+ *
+ * @example
+ * generateId() // "3b4e8f2a-1c9d-4e7f-a0b2-5d6c3e8f1a4b"
+ */
+export function generateId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = Math.random() * 16 | 0
+    const v = c === 'x' ? r : (r & 0x3 | 0x8)
+    return v.toString(16)
+  })
+}

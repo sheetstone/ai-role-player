@@ -1,5 +1,6 @@
 import { createContext, useContext, useReducer, type Dispatch } from 'react'
 import type { Session, SessionState, Scenario, Persona, Turn } from '../types'
+import { generateId } from '../utils'
 
 // ─── Actions ─────────────────────────────────────────────────────────────────
 
@@ -81,7 +82,7 @@ function reducer(ctx: SessionContextState, action: Action): SessionContextState 
         error: null,
         state: 'listening',
         session: {
-          id: crypto.randomUUID(),
+          id: generateId(),
           scenario: action.scenario,
           persona: action.persona,
           difficulty: action.difficulty,
