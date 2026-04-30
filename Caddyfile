@@ -1,0 +1,3 @@
+43-199-195-237.sslip.io {
+    reverse_proxy frontend:80
+}

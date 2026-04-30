@@ -3,9 +3,6 @@ services:
     build: ./backend
     restart: unless-stopped
     env_file: ./backend/.env
-    # admin-data volume is mounted over dist/data so persona/scenario JSON
-    # changes survive container restarts. On first run Docker seeds the volume
-    # from the image (the default JSON files baked in during build).
     volumes:
       - admin-data:/app/dist/data
     expose:
@@ -14,10 +11,23 @@ services:
   frontend:
     build: ./frontend
     restart: unless-stopped
-    ports:
-      - "80:80"
+    expose:
+      - "80"
     depends_on:
       - backend
 
+  caddy:
+    image: caddy:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy-data:/data
+    depends_on:
+      - frontend
+
 volumes:
   admin-data:
+  caddy-data:
