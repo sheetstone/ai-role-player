@@ -14,6 +14,7 @@ A voice-first web application for sales training. Sales reps practice customer c
 6. [Setup & Running Locally](#6-setup--running-locally)
 7. [Environment Variables](#7-environment-variables)
 8. [Browser Support](#8-browser-support)
+9. [Production Deployment](#9-production-deployment)
 
 ---
 
@@ -273,3 +274,68 @@ The backend will start but API calls will fail with a clear error if `GEMINI_API
 Voice features require:
 - Microphone permission granted by the user
 - A secure context (`https://` or `localhost`) — browsers block `getUserMedia` on plain `http://`
+
+---
+
+## 9. Production Deployment
+
+The app ships as three Docker containers managed by Docker Compose: **frontend** (Nginx serving the React build), **backend** (Node.js API), and **Caddy** (automatic HTTPS).
+
+### Infrastructure
+
+| Item | Value |
+|---|---|
+| Cloud | AWS EC2 |
+| Region | `ap-southeast-1` (Singapore) — required, Gemini API is blocked in `ap-east-1` HK |
+| Instance | `t3.medium` — 2 vCPU / 4 GB RAM, Ubuntu 22.04 |
+| Static IP | AWS Elastic IP |
+| TLS | Caddy + [sslip.io](https://sslip.io) (free, no domain purchase needed) |
+
+### First deploy on a new VM
+
+```bash
+# 1. Install Docker
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker ubuntu && exit   # re-login after
+
+# 2. Clone and configure
+git clone https://github.com/sheetstone/ai-role-player.git
+cd ai-role-player
+cp backend/.env.example backend/.env
+nano backend/.env   # fill in GEMINI_API_KEY and CORS_ORIGIN
+
+# 3. Start
+docker compose up -d --build
+```
+
+### Environment variables (backend/.env)
+
+| Variable | Required | Description |
+|---|---|---|
+| `GEMINI_API_KEY` | Yes | Gemini API key from [aistudio.google.com](https://aistudio.google.com) |
+| `GEMINI_MODEL` | No | Default: `gemini-2.0-flash` |
+| `PORT` | No | Default: `3001` |
+| `NODE_ENV` | No | Set to `production` on the VM |
+| `CORS_ORIGIN` | Yes | Must match the live HTTPS URL exactly, e.g. `https://1-2-3-4.sslip.io` |
+
+### Redeploy after code changes
+
+```bash
+git pull
+docker compose up -d --build
+```
+
+### Useful diagnostics
+
+```bash
+docker compose ps                 # all three services should show Up
+docker compose logs caddy         # confirm TLS cert was obtained
+docker compose logs backend       # check for API errors
+curl http://localhost/api/health  # quick health check from inside the VM
+```
+
+### Changing the IP / domain
+
+1. Update `Caddyfile` — replace the sslip.io hostname with the new one
+2. Update `CORS_ORIGIN` in `backend/.env` on the VM
+3. `git pull && docker compose up -d --build`
