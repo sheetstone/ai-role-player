@@ -1,0 +1,25 @@
+name: Release Gate
+
+# Blocks any PR into production that does not come from a release/* branch.
+# Pair this with a branch protection rule on `production` that requires
+# this status check to pass before merging.
+
+on:
+  pull_request:
+    branches:
+      - production
+
+jobs:
+  check-source-branch:
+    name: Verify source is a release branch
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Fail if source is not release/*
+        run: |
+          if [[ "${{ github.head_ref }}" != release/* ]]; then
+            echo "❌ Only release/* branches can be merged into production."
+            echo "   Source branch: ${{ github.head_ref }}"
+            exit 1
+          fi
+          echo "✅ Source branch ${{ github.head_ref }} is a valid release branch."

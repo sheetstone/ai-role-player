@@ -23,9 +23,8 @@ Thumbs.db
 *.swp
 *.swo
 
-# agent / AI tool config — exclude local settings and project cache, keep skills
-.claude/settings*.json
-.claude/projects/
+# agent / AI tool config
+.claude/
 .gemini/
 CLAUDE.md
 
@@ -33,6 +32,9 @@ CLAUDE.md
 requirement.md
 requirement.txt
 *.docx
+
+# log
+log/
 
 # plan
 plan/
