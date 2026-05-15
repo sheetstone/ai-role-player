@@ -1,0 +1,13 @@
+runConfig:
+  minInstances: 0
+  concurrency: 80
+
+env:
+  - variable: GEMINI_MODEL
+    value: gemini-2.5-flash
+  - variable: NODE_ENV
+    value: production
+  - variable: CORS_ORIGIN
+    value: https://ai-role-player.web.app
+  - variable: GEMINI_API_KEY
+    secret: GEMINI_API_KEY

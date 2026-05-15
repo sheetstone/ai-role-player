@@ -27,6 +27,7 @@ Thumbs.db
 .claude/
 .gemini/
 CLAUDE.md
+.agents/
 
 # requirements & design docs
 requirement.md
@@ -35,6 +36,9 @@ requirement.txt
 
 # log
 log/
+
+# screenshot
+screenshot/
 
 # plan
 plan/
@@ -48,3 +52,7 @@ backend/.env
 backend/uploads/
 backend/tsconfig.tsbuildinfo
 frontend/tsconfig.tsbuildinfo
+
+# Firebase service account key (never commit)
+serviceAccount.json
+*serviceAccount*.json

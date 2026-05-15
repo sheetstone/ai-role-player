@@ -4,7 +4,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import fs from 'fs'
 
 const router = Router()
-const upload = multer({ dest: 'uploads/' })
+const upload = multer({ dest: '/tmp/uploads/' })
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
 

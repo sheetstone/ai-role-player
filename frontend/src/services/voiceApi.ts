@@ -1,4 +1,4 @@
-import { ApiRequestError, retryFetch } from './api'
+import { ApiRequestError, BASE_URL, retryFetch } from './api'
 import type { TranscribeResponse, ChatTurnRequest, FeedbackRequest, FeedbackResult } from '../types'
 
 export const voiceApi = {
@@ -7,7 +7,7 @@ export const voiceApi = {
     form.append('audio', blob, 'recording.webm')
     if (sttModel) form.append('sttModel', sttModel)
 
-    const res = await retryFetch('/api/audio/transcribe', { method: 'POST', body: form })
+    const res = await retryFetch(`${BASE_URL}/api/audio/transcribe`, { method: 'POST', body: form })
     if (!res.ok) {
       const body = await res.json().catch(() => ({ error: res.statusText }))
       throw new ApiRequestError(res.status, body.error ?? res.statusText)
@@ -16,11 +16,11 @@ export const voiceApi = {
   },
 
   // Returns an EventSource-compatible URL; caller opens the SSE connection
-  chatTurnUrl: () => '/api/chat/turn',
+  chatTurnUrl: () => `${BASE_URL}/api/chat/turn`,
 
   // Called by useStreamingTranscript to POST and receive SSE
   openChatTurn: (payload: ChatTurnRequest, signal: AbortSignal): Promise<Response> =>
-    fetch('/api/chat/turn', {
+    fetch(`${BASE_URL}/api/chat/turn`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -29,7 +29,7 @@ export const voiceApi = {
 
   // Returns a fetch Response with a binary audio stream
   speak: (text: string, voice?: string, signal?: AbortSignal, ttsModel?: string): Promise<Response> =>
-    retryFetch('/api/tts/speak', {
+    retryFetch(`${BASE_URL}/api/tts/speak`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text, voice, ttsModel }),
@@ -37,7 +37,7 @@ export const voiceApi = {
     }),
 
   generateFeedback: async (payload: FeedbackRequest): Promise<FeedbackResult> => {
-    const res = await fetch('/api/feedback/generate', {
+    const res = await fetch(`${BASE_URL}/api/feedback/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
