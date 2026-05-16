@@ -1,25 +1,35 @@
-name: Deploy to Production
+name: Deploy to Firebase
 
 on:
   push:
-    branches:
-      - production
+    branches: [production]
 
 jobs:
-  deploy:
-    name: SSH deploy to EC2
+  deploy-frontend:
+    name: Build & deploy frontend to Firebase Hosting
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy
-        uses: appleboy/ssh-action@v1.2.0
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            cd ~/ai-role-player
-            git fetch origin
-            git checkout production
-            git pull origin production
-            docker compose up -d --build
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Build
+        run: npm run build
+        working-directory: frontend
+
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          channelId: live
+          projectId: ai-role-player
