@@ -1,0 +1,19 @@
+name: Enforce release branch
+
+on:
+  pull_request:
+    branches: [production]
+
+jobs:
+  check-source-branch:
+    name: Source branch must be release/*
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify PR comes from a release/* branch
+        run: |
+          if [[ "${{ github.head_ref }}" != release/* ]]; then
+            echo "❌ PRs to production must come from a release/* branch."
+            echo "   Source branch: ${{ github.head_ref }}"
+            exit 1
+          fi
+          echo "✅ Source branch '${{ github.head_ref }}' is a valid release branch."
