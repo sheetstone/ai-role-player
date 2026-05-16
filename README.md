@@ -51,15 +51,26 @@ A voice-first web application for sales training. Sales reps practice customer c
 │  Web Audio API  ◄──────►  Voice Pipeline Layer   │
 └───────────────────────────┬──────────────────────┘
                             │  REST + SSE
-┌───────────────────────────▼──────────────────────┐
-│               Node.js / Express 5                │
-│                                                  │
-│  POST /api/audio/transcribe   ──►  Gemini STT    │
-│  POST /api/chat/turn (SSE)    ──►  Gemini API    │
-│  POST /api/tts/speak          ──►  Gemini TTS    │
-│  POST /api/feedback/generate  ──►  Gemini API    │
-│  /api/admin/*  (CRUD)         ──►  JSON files    │
-└──────────────────────────────────────────────────┘
+         ┌──────────────────┴──────────────────┐
+         │  Firebase Hosting (CDN)              │
+         │  Static SPA  ──► frontend/dist/      │
+         └──────────────────┬──────────────────┘
+                            │
+         ┌──────────────────▼──────────────────┐
+         │  Firebase App Hosting (Cloud Run)    │
+         │  Node.js / Express 5                 │
+         │                                      │
+         │  POST /api/audio/transcribe  → Gemini STT  │
+         │  POST /api/chat/turn (SSE)   → Gemini LLM  │
+         │  POST /api/tts/speak         → Gemini TTS  │
+         │  POST /api/feedback/generate → Gemini LLM  │
+         │  /api/admin/*  (CRUD)        → Firestore   │
+         └──────────────────┬──────────────────┘
+                            │
+         ┌──────────────────▼──────────────────┐
+         │  Firestore                           │
+         │  scenarios / personas collections   │
+         └─────────────────────────────────────┘
 ```
 
 ### Voice pipeline (per turn)
@@ -102,37 +113,46 @@ Each layer starts as soon as the previous layer produces its first output — ST
 | Package | Version | Why |
 |---|---|---|
 | Express | 5 | Minimal HTTP layer; `res.write()` makes SSE trivial |
-| tsx | 4 | Runs TypeScript directly in development — no compile step |
-| dotenv | 17 | Loads API keys from `.env` on startup |
-| cors | 2 | Allows the Vite dev server (port 5173) to call the API (port 3001) |
+| tsx | 4 | Runs TypeScript directly — no compile step needed in Cloud Run |
+| firebase-admin | 13 | Firestore SDK for server-side CRUD; uses Application Default Credentials automatically on Cloud Run |
 | `@google/generative-ai` | latest | Gemini API for STT, LLM (Persona Agent + Coaching Agent), and TTS |
-| multer | 1 | Multipart form handling for audio file uploads to the transcribe endpoint |
+| multer | 2 | Multipart form handling for audio uploads; temp files written to `/tmp/uploads/` |
+
+### Infrastructure
+
+| Service | Role |
+|---|---|
+| Firebase Hosting | Serves the React SPA from CDN; global edge delivery |
+| Firebase App Hosting | Runs the Express backend on Cloud Run; scales to zero when idle |
+| Firestore | Stores scenarios and personas; 50K free reads/day covers MVP traffic |
+| Secret Manager | Stores `GEMINI_API_KEY`; injected into Cloud Run at deploy time |
+| GitHub Actions | Builds and deploys the frontend on push to `production` |
 
 ### Key design decisions
 
-**Single API (Gemini) for all AI tasks**
-Gemini Flash handles audio transcription (STT), conversational generation (LLM), and speech synthesis (TTS) — one API key, one SDK. Gemini TTS returns raw 16-bit LE PCM (`audio/L16`); the backend wraps it in a 44-byte WAV header before sending so browsers can decode it with `AudioContext.decodeAudioData()`.
+**Single AI provider (Gemini) for STT + LLM + TTS**
+One API key, one SDK, one billing account. Gemini Flash supports audio input natively for STT; Gemini TTS voices are sufficient quality for training simulations. Gemini TTS returns raw 16-bit LE PCM (`audio/L16`); the backend wraps it in a 44-byte WAV header before sending so browsers can decode it with `AudioContext.decodeAudioData()`.
 
 **SSE over WebSockets for LLM streaming**
-The LLM call is strictly server-to-client (token deltas). Server-Sent Events are simpler to implement and debug — no upgrade handshake, works through HTTP/2, and the streaming `fetch` API handles it directly.
-
-**Buffer-based SSE parser**
-A raw `fetch` stream reader accumulates bytes in a `lineBuffer`, splitting on `\n\n` SSE event boundaries before attempting `JSON.parse`. This prevents silent parse failures when TCP delivers a `data:` line's JSON payload split across multiple reads.
+The LLM call is strictly server-to-client (token deltas only). Server-Sent Events are simpler to implement and debug — no upgrade handshake, works through HTTP/2, and the streaming `fetch` API handles it directly. A raw `fetch` stream reader accumulates bytes in a `lineBuffer`, splitting on `\n\n` SSE event boundaries before attempting `JSON.parse`. This prevents silent parse failures when TCP delivers a `data:` line split across multiple reads.
 
 **Two-agent pattern (Persona Agent + Coaching Agent)**
-The Persona Agent runs in real time during the session, constrained to stay in character. The Coaching Agent runs once after the session ends with a completely different system prompt, producing structured `FeedbackResult` JSON. Separating them means neither agent's prompt compromises the other's behaviour.
+The Persona Agent runs in real time during the session, constrained to stay in character, producing short spoken replies (1–3 sentences). The Coaching Agent runs once after the session ends with a completely different system prompt, producing structured `FeedbackResult` JSON. Separating them means neither agent's prompt compromises the other's behaviour.
 
 **Push-to-talk as the default input mode**
-Hands-free voice detection is unreliable in noisy sales environments and adds latency from false-trigger guards. PTT gives learners intentional, controlled input. Tap-to-record is offered as an alternative; both modes are persisted to `localStorage`.
+Voice activity detection is unreliable in noisy sales environments and adds latency from false-trigger guards. PTT gives learners intentional, controlled input. Tap-to-record is offered as an alternative; both modes are persisted to `localStorage`.
 
-**JSON flat files for admin data**
-Scenarios and personas are stored in `backend/src/data/scenarios.json` and `personas.json`. Reads happen on every request so admin changes are immediately visible in the dashboard — no cache invalidation needed. SQLite can replace this for production.
+**Session state machine (explicit states)**
+Voice UX has many concurrent concerns (recording, network, audio playback, UI). Implicit boolean flags (`isRecording`, `isLoading`, `isPlaying`) create impossible state combinations. An explicit `useReducer` state machine (`idle → listening → processing → speaking → paused → ended`) makes illegal states unrepresentable.
+
+**Firestore for admin data**
+Scenarios and personas are stored as Firestore documents. Reads happen on every request so admin changes are immediately visible in the dashboard — no cache invalidation needed. Individual document writes replace full-array rewrites, making concurrent admin edits safe. The free tier (50K reads/day, 20K writes/day) covers MVP traffic with no cost.
+
+**tsx as the Cloud Run runtime**
+Firebase App Hosting runs `npm ci` with `NODE_ENV=production`, which skips `devDependencies` — making `tsc` unavailable. Using `tsx` as the runtime (TypeScript executed directly via esbuild) avoids any compile step in the cloud, keeping the deploy pipeline simple.
 
 **Model switcher via localStorage**
-`useModelConfig` reads/writes a JSON blob in `localStorage` keyed to `ai-role-player:model-config`. A ref pattern (`llmModelRef.current = llmModel`) is used inside hooks whose callbacks are stable references — they always read the latest selected model without being recreated on every selection change.
-
-**Structured conversation phases in the Persona Agent prompt**
-Each persona system prompt includes an explicit phase guide (`Opening → Discovery → Pitch → Objection Handling → Closing`). This reduces hallucinations and keeps sessions relevant to the chosen scenario.
+A ref pattern (`llmModelRef.current = llmModel`) is used inside hooks whose callbacks are stable references — they always read the latest selected model without being recreated on every selection change. `localStorage` means the selection survives page refreshes without a backend round-trip.
 
 ---
 
@@ -146,19 +166,24 @@ ai-role-player/
 │   │   │   ├── dashboard/       # ScenarioSelector, PersonaSelector, ModelSelector, etc.
 │   │   │   ├── session/         # VoicePanel, TranscriptPanel, SessionControls, ErrorToast, etc.
 │   │   │   ├── feedback/        # FeedbackSummary, KeyMomentCard, TranscriptViewer, ExportControls
-│   │   │   └── admin/           # AdminModal, ScenarioForm, PersonaForm
+│   │   │   ├── admin/           # AdminModal, ScenarioForm, PersonaForm
+│   │   │   └── ui/              # Icon.tsx (shared SVG icons)
 │   │   ├── context/
 │   │   │   └── SessionContext.tsx   # Session state machine (useReducer)
 │   │   ├── hooks/
-│   │   │   ├── useVoiceRecorder.ts      # MediaRecorder + Web Audio API
-│   │   │   ├── useAudioPlayer.ts        # TTS playback via AudioContext
-│   │   │   ├── useStreamingTranscript.ts  # SSE consumer with buffer-based parser
-│   │   │   ├── useModelConfig.ts        # Model selection with localStorage persistence
-│   │   │   └── useEarcons.ts            # State-transition audio cues
+│   │   │   ├── useVoiceRecorder.ts
+│   │   │   ├── useAudioPlayer.ts
+│   │   │   ├── useStreamingTranscript.ts
+│   │   │   ├── useModelConfig.ts
+│   │   │   └── useEarcons.ts
 │   │   ├── pages/               # DashboardPage, SessionPage, FeedbackPage, AdminPage
-│   │   ├── services/            # voiceApi, adminApi (fetch wrappers with retry)
+│   │   ├── services/
+│   │   │   ├── api.ts           # BASE_URL + request/retryRequest/retryFetch helpers
+│   │   │   ├── voiceApi.ts      # STT, chat, TTS, feedback endpoints
+│   │   │   └── adminApi.ts      # Scenario/persona CRUD
 │   │   └── types/               # Shared TypeScript interfaces
-│   ├── vite.config.ts           # Proxy /api → localhost:3001
+│   ├── .env.production          # VITE_API_URL (App Hosting backend URL)
+│   ├── vite.config.ts           # Proxies /api → localhost:3001 in dev
 │   └── package.json
 │
 ├── backend/
@@ -166,24 +191,32 @@ ai-role-player/
 │   │   ├── agents/
 │   │   │   ├── personaAgent.ts      # Builds prompt + streams Gemini response
 │   │   │   └── coachingAgent.ts     # Post-session feedback (structured JSON)
+│   │   ├── lib/
+│   │   │   └── db.ts                # Firestore singleton (applicationDefault)
 │   │   ├── routes/
 │   │   │   ├── health.ts
-│   │   │   ├── audio.ts             # POST /api/audio/transcribe (Gemini STT)
-│   │   │   ├── chat.ts              # POST /api/chat/turn (SSE stream)
-│   │   │   ├── tts.ts               # POST /api/tts/speak (Gemini TTS → WAV)
+│   │   │   ├── audio.ts             # POST /api/audio/transcribe
+│   │   │   ├── chat.ts              # POST /api/chat/turn (SSE)
+│   │   │   ├── tts.ts               # POST /api/tts/speak
 │   │   │   ├── feedback.ts          # POST /api/feedback/generate
-│   │   │   └── admin.ts             # CRUD /api/admin/scenarios|personas
-│   │   ├── middleware/
-│   │   │   └── errorHandler.ts
+│   │   │   └── admin.ts             # CRUD /api/admin/scenarios|personas → Firestore
 │   │   ├── data/
-│   │   │   ├── scenarios.json       # Live-editable via Admin Console
+│   │   │   ├── scenarios.json       # Seed data (source of truth for re-seeding)
 │   │   │   └── personas.json
-│   │   └── index.ts                 # Express app entry point
-│   ├── .env.example
+│   │   └── index.ts
+│   ├── scripts/
+│   │   └── seedFirestore.ts         # One-time seed: JSON → Firestore
+│   ├── apphosting.yaml              # Cloud Run config (minInstances: 0, secret refs)
 │   └── package.json
 │
-├── plan/                        # Implementation plan + research docs
-├── log/                         # Changelog and gap tracking
+├── .github/
+│   └── workflows/
+│       ├── deploy.yml               # Build React + deploy to Firebase Hosting
+│       └── check-release-branch.yml # Blocks PRs to production not from release/*
+│
+├── firebase.json                    # Hosting config (public: frontend/dist)
+├── firestore.rules                  # Firestore security rules
+├── firestore.indexes.json
 └── README.md
 ```
 
@@ -193,8 +226,9 @@ ai-role-player/
 
 | Requirement | Version |
 |---|---|
-| Node.js | ≥ 22.x |
+| Node.js | ≥ 20.x |
 | npm | ≥ 10.x |
+| Firebase CLI | latest (`npm install -g firebase-tools`) |
 | Google AI / Gemini API key | [aistudio.google.com](https://aistudio.google.com) |
 
 ---
@@ -215,25 +249,45 @@ cd backend
 cp .env.example .env
 # Edit .env — add your GEMINI_API_KEY
 npm install
-npm run dev
-# Backend running at http://localhost:3001
 ```
 
-### 3. Set up the frontend (new terminal tab)
+### 3. Start the Firestore emulator (terminal 1)
+
+```bash
+# From project root
+firebase emulators:start --only firestore
+# Emulator UI at http://localhost:4000
+# Firestore at 127.0.0.1:8080 (backend/.env already points here)
+```
+
+### 4. Start the backend (terminal 2)
+
+```bash
+cd backend
+npm run dev
+# Express running at http://localhost:3001
+# Reads/writes go to the local Firestore emulator
+```
+
+### 5. Seed the emulator with sample data (first time only)
+
+```bash
+cd backend
+npm run dev   # must be running so db.ts initialises
+# In a separate tab:
+npx tsx scripts/seedFirestore.ts
+# Check http://localhost:4000 to verify data appeared
+```
+
+### 6. Start the frontend (terminal 3)
 
 ```bash
 cd frontend
 npm install
 npm run dev
-# Frontend running at http://localhost:5173
+# Vite dev server at http://localhost:5173
+# /api/* proxied to localhost:3001 automatically
 ```
-
-### 4. Open the app
-
-Navigate to [http://localhost:5173](http://localhost:5173).  
-The frontend proxies all `/api/*` requests to the backend automatically — no extra configuration needed.
-
-The gear icon (⚙) in the top-right corner lets you switch models and access the Admin Console.
 
 ### Useful commands
 
@@ -244,7 +298,6 @@ The gear icon (⚙) in the top-right corner lets you switch models and access th
 | `npm run lint` | `frontend/` | ESLint check |
 | `npm run dev` | `backend/` | Start Express with `tsx watch` (auto-restart on save) |
 | `npm run typecheck` | `backend/` | TypeScript type check without emitting |
-| `npm run build` | `backend/` | Compile TypeScript to `backend/dist/` |
 
 ---
 
@@ -254,11 +307,11 @@ All variables are set in `backend/.env` (copy from `backend/.env.example`).
 
 | Variable | Required | Description |
 |---|---|---|
-| `GEMINI_API_KEY` | Yes | Used for STT, LLM (Persona Agent + Coaching Agent), and TTS |
-| `GEMINI_MODEL` | No | Default LLM model (default: `gemini-2.5-flash`); overridden per-request by the model switcher |
+| `GEMINI_API_KEY` | Yes | Used for STT, LLM, and TTS. In production, injected from Secret Manager. |
+| `GEMINI_MODEL` | No | Default LLM model (default: `gemini-2.5-flash`) |
 | `PORT` | No | Backend port (default: `3001`) |
-
-The backend will start but API calls will fail with a clear error if `GEMINI_API_KEY` is missing.
+| `CORS_ORIGIN` | No | Allowed origin for CORS (default: `http://localhost:5173`). In production, set to the Firebase Hosting URL. |
+| `FIRESTORE_EMULATOR_HOST` | Dev only | Set to `127.0.0.1:8080` to use the local Firestore emulator instead of production Firestore. |
 
 ---
 
@@ -268,74 +321,67 @@ The backend will start but API calls will fail with a clear error if `GEMINI_API
 |---|---|---|
 | Chrome 120+ | Full | Primary development target |
 | Firefox 120+ | Full | `MediaRecorder` outputs `audio/ogg`; backend accepts it |
-| Safari 17+ | Partial | `MediaRecorder` requires `audio/mp4`; a `RecordRTC` polyfill may be needed for older versions |
+| Safari 17+ | Partial | `MediaRecorder` requires `audio/mp4` |
 | Edge 120+ | Full | Chromium-based; same as Chrome |
 
-Voice features require:
-- Microphone permission granted by the user
-- A secure context (`https://` or `localhost`) — browsers block `getUserMedia` on plain `http://`
+Voice features require microphone permission and a secure context (`https://` or `localhost`).
 
 ---
 
 ## 9. Production Deployment
 
-The app ships as three Docker containers managed by Docker Compose: **frontend** (Nginx serving the React build), **backend** (Node.js API), and **Caddy** (automatic HTTPS).
+The app runs on Firebase — no servers to manage, scales to zero when idle.
 
 ### Infrastructure
 
-| Item | Value |
-|---|---|
-| Cloud | AWS EC2 |
-| Region | `ap-southeast-1` (Singapore) — required, Gemini API is blocked in `ap-east-1` HK |
-| Instance | `t3.medium` — 2 vCPU / 4 GB RAM, Ubuntu 22.04 |
-| Static IP | AWS Elastic IP |
-| TLS | Caddy + [sslip.io](https://sslip.io) (free, no domain purchase needed) |
-
-### First deploy on a new VM
-
-```bash
-# 1. Install Docker
-curl -fsSL https://get.docker.com | sh
-sudo usermod -aG docker ubuntu && exit   # re-login after
-
-# 2. Clone and configure
-git clone https://github.com/sheetstone/ai-role-player.git
-cd ai-role-player
-cp backend/.env.example backend/.env
-nano backend/.env   # fill in GEMINI_API_KEY and CORS_ORIGIN
-
-# 3. Start
-docker compose up -d --build
-```
-
-### Environment variables (backend/.env)
-
-| Variable | Required | Description |
+| Component | Service | URL |
 |---|---|---|
-| `GEMINI_API_KEY` | Yes | Gemini API key from [aistudio.google.com](https://aistudio.google.com) |
-| `GEMINI_MODEL` | No | Default: `gemini-2.0-flash` |
-| `PORT` | No | Default: `3001` |
-| `NODE_ENV` | No | Set to `production` on the VM |
-| `CORS_ORIGIN` | Yes | Must match the live HTTPS URL exactly, e.g. `https://1-2-3-4.sslip.io` |
+| Frontend SPA | Firebase Hosting (CDN) | `https://ai-role-player.web.app` |
+| Backend API | Firebase App Hosting (Cloud Run) | `https://ai-role-player-backend--ai-role-player.us-central1.hosted.app` |
+| Database | Firestore | `ai-role-player` project, `(default)` database |
+| API Key | Google Secret Manager | Secret: `GEMINI_API_KEY` |
 
-### Redeploy after code changes
+### Deploy workflow
 
-```bash
-git pull
-docker compose up -d --build
+Deployments are triggered by merging a `release/*` PR into `production`:
+
+```
+main ──► release/x.x ──► PR to production ──► approval ──► merge
+                                                              │
+                                     ┌────────────────────────┤
+                                     │                        │
+                              GitHub Actions            App Hosting
+                          (build + deploy frontend)  (auto-deploys backend)
 ```
 
-### Useful diagnostics
+- **Frontend**: GitHub Actions runs `npm run build` in `frontend/` then deploys to Firebase Hosting via `FirebaseExtended/action-hosting-deploy`.
+- **Backend**: Firebase App Hosting watches the `production` branch and auto-deploys the Express API on every push — no CI step needed.
+
+### Branch protection
+
+- `main` — direct commits allowed (owner only); no force-push; no deletion
+- `production` — PRs only; source branch must be `release/*`; 1 approval required; no bypass
+
+### Required GitHub Secret
+
+| Secret | Where to get it |
+|---|---|
+| `FIREBASE_SERVICE_ACCOUNT` | Firebase Console → Project settings → Service accounts → Generate new private key |
+
+### Re-seeding Firestore
+
+If scenario/persona data is lost, re-run the seed script with a service account key:
 
 ```bash
-docker compose ps                 # all three services should show Up
-docker compose logs caddy         # confirm TLS cert was obtained
-docker compose logs backend       # check for API errors
-curl http://localhost/api/health  # quick health check from inside the VM
+cd backend
+GOOGLE_APPLICATION_CREDENTIALS=../serviceAccount.json npx tsx scripts/seedFirestore.ts
 ```
 
-### Changing the IP / domain
+> `serviceAccount.json` is gitignored — never commit it.
 
-1. Update `Caddyfile` — replace the sslip.io hostname with the new one
-2. Update `CORS_ORIGIN` in `backend/.env` on the VM
-3. `git pull && docker compose up -d --build`
+### Manual frontend deploy (if CI is down)
+
+```bash
+cd frontend && npm run build
+firebase deploy --only hosting --project ai-role-player
+```

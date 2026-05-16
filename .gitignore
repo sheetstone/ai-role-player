@@ -44,6 +44,9 @@ screenshot/
 # plan
 plan/
 
+# archived docs (requirement specs, old plans, logs)
+archive/
+
 # Project specific
 backend/node_modules/
 frontend/node_modules/
