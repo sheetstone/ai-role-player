@@ -28,6 +28,7 @@ Thumbs.db
 .gemini/
 CLAUDE.md
 .agents/
+skills-lock.json
 
 # requirements & design docs
 requirement.md
